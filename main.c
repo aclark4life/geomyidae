@@ -422,8 +422,9 @@ main(int argc, char *argv[])
 	int sock, dofork = 1, inetf = AF_UNSPEC, usechroot = 0,
 	    nocgi = 0, errno_save, nbindips = 0, i, j,
 	    nlfdret, *lfdret, listfd, maxlfd, istls = 0,
+	    dotls = 0,
 #ifdef ENABLE_TLS
-	    dotls = 0, tlspipe[2], shufbuf[1025],
+	    tlspipe[2], shufbuf[1025],
 	    shuflen, wlen, shufpos,
 #endif /* ENABLE_TLS */
 	    maxrecv, retl,
