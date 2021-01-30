@@ -127,6 +127,14 @@ handlebin(int sock, char *file, char *port, char *base, char *args,
 }
 
 void
+handletxt(int sock, char *file, char *port, char *base, char *args,
+		char *sear, char *ohost, char *chost, int istls)
+{
+	handlebin(sock, file, port, base, args, sear, ohost, chost, istls);
+	dprintf(sock, ".\r\n");
+}
+
+void
 handlecgi(int sock, char *file, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, int istls)
 {

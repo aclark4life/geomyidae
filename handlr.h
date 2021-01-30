@@ -26,6 +26,8 @@ void handlegph(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, int istls);
 void handlebin(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, int istls);
+void handletxt(int sock, char *file, char *port, char *base, char *args,
+			char *sear, char *ohost, char *chost, int istls);
 void handlecgi(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, int istls);
 void handledcgi(int sock, char *file, char *port, char *base, char *args,
