@@ -116,9 +116,27 @@ xsendfile(int fd, int sock)
 
 	USED(optval);
 
-	if (fstat(fd, &st) >= 0)
+	/*
+	 * The story of xsendfile.
+	 *
+	 * Once upon a time, here you saw a big #ifdef switch source of
+	 * many ways how to send files with special functions on
+	 * different operating systems. All of this was removed, because
+	 * operating systems and kernels got better over time,
+	 * simplifying what you need and reducing corner cases.
+	 *
+	 * For example Linux sendfile(2) sounds nice and faster, but
+	 * the function is different on every OS and slower to the now
+	 * used approach of read(2) and write(2).
+	 *
+	 * If you ever consider changing this to some "faster" approach,
+	 * consider benchmarks on all platforms.
+	 */
+
+	if (fstat(fd, &st) >= 0) {
 		if ((bufsiz = st.st_blksize) < BUFSIZ)
 			bufsiz = BUFSIZ;
+	}
 
 	sendb = xmalloc(bufsiz);
 	while ((len = read(fd, sendb, bufsiz)) > 0) {
@@ -133,6 +151,7 @@ xsendfile(int fd, int sock)
 		}
 	}
 	free(sendb);
+
 	return 0;
 }
 
