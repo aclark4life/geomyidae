@@ -28,6 +28,15 @@
 /*
  * Be careful, to look at handlerequest(), in case you add any executing
  * handler, so nocgi will be valuable.
+ *
+ * All files are handled as binary, without a following ".\r\n". Proper
+ * encoding lines with beginning "." would be a really slow function, not
+ * adding any feature to gopher. Clients can check for the types
+ * requested and assume ".\r\n" or leave it out.
+ *
+ * Geomyidae only adds ".\r\n" in all kind of menus, like dir listings
+ * or dcgi files. There the case of some maybe future "." item type needs
+ * to be handled, if really used.
  */
 
 filetype type[] = {
@@ -42,16 +51,16 @@ filetype type[] = {
 	{"gif", "g", handlebin},
 	{"png", "I", handlebin},
 	{"bmp", "I", handlebin},
-	{"txt", "0", handletxt},
-	{"html", "0", handletxt},
-	{"htm", "0", handletxt},
-	{"xhtml", "0", handletxt},
-	{"css", "0", handletxt},
-	{"md", "0", handletxt},
-	{"c", "0", handletxt},
-	{"sh", "0", handletxt},
-	{"patch", "0", handletxt},
-	{"meme", "0", handletxt},
+	{"txt", "0", handlebin},
+	{"html", "0", handlebin},
+	{"htm", "0", handlebin},
+	{"xhtml", "0", handlebin},
+	{"css", "0", handlebin},
+	{"md", "0", handlebin},
+	{"c", "0", handlebin},
+	{"sh", "0", handlebin},
+	{"patch", "0", handlebin},
+	{"meme", "0", handlebin},
 	{NULL, NULL, NULL},
 };
 
