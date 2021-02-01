@@ -460,41 +460,35 @@ main(int argc, char *argv[])
 	case 'c':
 		usechroot = 1;
 		break;
-	case 'p':
-		port = EARGF(usage());
-		if (sport == NULL)
-			sport = port;
-		break;
-	case 'l':
-		logfile = EARGF(usage());
-		break;
 	case 'd':
 		dofork = 0;
 		break;
 	case 'e':
 		nocgi = 1;
 		break;
-	case 'v':
-		loglvl = atoi(EARGF(usage()));
-		break;
-	case 'u':
-		user = EARGF(usage());
-		break;
 	case 'g':
 		group = EARGF(usage());
+		break;
+	case 'h':
+		ohost = EARGF(usage());
 		break;
 	case 'i':
 		bindips = xrealloc(bindips, sizeof(*bindips) * (++nbindips));
 		bindips[nbindips-1] = EARGF(usage());
 		break;
-	case 'h':
-		ohost = EARGF(usage());
+	case 'l':
+		logfile = EARGF(usage());
+		break;
+	case 'n':
+		revlookup = 0;
 		break;
 	case 'o':
 		sport = EARGF(usage());
 		break;
-	case 'n':
-		revlookup = 0;
+	case 'p':
+		port = EARGF(usage());
+		if (sport == NULL)
+			sport = port;
 		break;
 #ifdef ENABLE_TLS
 	case 't':
@@ -503,6 +497,12 @@ main(int argc, char *argv[])
 		certfile = EARGF(usage());
 		break;
 #endif /* ENABLE_TLS */
+	case 'u':
+		user = EARGF(usage());
+		break;
+	case 'v':
+		loglvl = atoi(EARGF(usage()));
+		break;
 	default:
 		usage();
 	} ARGEND;
