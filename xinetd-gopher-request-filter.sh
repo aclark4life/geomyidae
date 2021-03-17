@@ -7,8 +7,9 @@ dstserver="localhost"
 dstport="7070"
 
 read -r request
+request="$(printf "%s\n" "${request}" | tr -d '\r')"
 case "${request}" in
-/bill-gates-chips-us-all|/something-secret)
+*bill-gates*|*cia*)
 	printf "3The request cannot be handled\terror\t70\r\n"
 	;;
 *)
