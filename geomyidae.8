@@ -1,6 +1,6 @@
 .\" geomyidae.8 handcrafted in GNU groff -mdoc using nvi
 .\"
-.Dd February 23, 2020
+.Dd March 17, 2021
 .Dt GEOMYIDAE 8
 .Os
 .
@@ -17,6 +17,7 @@
 .Op Fl d
 .Op Fl e
 .Op Fl n
+.Op Fl s
 .Op Fl l Ar logfile
 .Op Fl v Ar loglevel
 .Op Fl b Ar base
@@ -79,7 +80,8 @@ values if set.  See
 .Ic OPTIONS
 below for specifics.  Launching geomyidae automatically is best done via a UNIX
 run-time (rc.d) script; several sample rc.d scripts are included in the geomyidae
-source archive.
+source archive. Logging in geomyidae can be done through either logfiles
+or syslog.
 .
 .Sh OPTIONS
 geomyidae options and default settings:
@@ -107,6 +109,9 @@ Disable execution of any CGI or DCGI script.
 .
 .It Fl n
 Don't perform reverse lookups.
+.
+.It Fl s
+Log using syslog for logging.
 .
 .It Fl l Ar logfile
 Specify file where log output is written (no default).

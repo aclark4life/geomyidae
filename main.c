@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <syslog.h>
 
 #ifdef ENABLE_TLS
 #include <tls.h>
@@ -46,11 +47,13 @@ enum {
 };
 
 int glfd = -1;
+int dosyslog = 0;
 int loglvl = 47;
-int *listfds = NULL;
-int nlistfds = 0;
 int revlookup = 1;
 char *logfile = NULL;
+
+int *listfds = NULL;
+int nlistfds = 0;
 
 char *argv0;
 char stdbase[] = "/var/gopher";
@@ -104,15 +107,17 @@ logentry(char *host, char *port, char *qry, char *status)
 	struct tm *ptr;
 	char timstr[128], *ahost;
 
-        if (glfd >= 0) {
-		tim = time(0);
-		ptr = gmtime(&tim);
-
+        if (glfd >= 0 || dosyslog) {
 		ahost = revlookup ? reverselookup(host) : host;
-		strftime(timstr, sizeof(timstr), "%F %T %z", ptr);
-
-		dprintf(glfd, "[%s|%s|%s|%s] %s\n",
-			timstr, ahost, port, status, qry);
+		if (dosyslog) {
+			syslog("[%s|%s|%s] %s\n", ahost, port, status, qry);
+		} else {
+			tim = time(0);
+			ptr = gmtime(&tim);
+			strftime(timstr, sizeof(timstr), "%F %T %z", ptr);
+			dprintf(glfd, "[%s|%s|%s|%s] %s\n",
+				timstr, ahost, port, status, qry);
+		}
 		if (revlookup)
 			free(ahost);
         }
@@ -284,7 +289,9 @@ sighandler(int sig)
 	case SIGABRT:
 	case SIGTERM:
 	case SIGKILL:
-		if (logfile != NULL && glfd != -1) {
+		if (dosyslog) {
+			closelog();
+		} else if (logfile != NULL && glfd != -1) {
 			close(glfd);
 			glfd = -1;
 		}
@@ -402,7 +409,7 @@ getlistenfd(struct addrinfo *hints, char *bindip, char *port, int *rlfdnum)
 void
 usage(void)
 {
-	dprintf(2, "usage: %s [-46cden] [-l logfile] "
+	dprintf(2, "usage: %s [-46cdens] [-l logfile] "
 #ifdef ENABLE_TLS
 		   "[-t keyfile certfile] "
 #endif /* ENABLE_TLS */
@@ -489,6 +496,9 @@ main(int argc, char *argv[])
 		port = EARGF(usage());
 		if (sport == NULL)
 			sport = port;
+		break;
+	case 's':
+		dosyslog = 1;
 		break;
 #ifdef ENABLE_TLS
 	case 't':
@@ -590,7 +600,13 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (logfile != NULL) {
+	if (dosyslog) {
+		if (!dofork) {
+			openlog("geomyidae", LOG_CONS|LOG_PERROR, LOG_DAEMON|LOG_INFO);
+		} else {
+			openlog("geomyidae", LOG_NDELAY|LOG_PID, LOG_DAEMON|LOG_INFO);
+		}
+	} else if (logfile != NULL) {
 		glfd = open(logfile, O_APPEND | O_WRONLY | O_CREAT, 0644);
 		if (glfd < 0) {
 			perror("log");
@@ -906,7 +922,9 @@ main(int argc, char *argv[])
 		close(sock);
 	}
 
-	if (logfile != NULL && glfd != -1) {
+	if (dosyslog) {
+		closelog();
+	} else if (logfile != NULL && glfd != -1) {
 		close(glfd);
 		glfd = -1;
 	}
