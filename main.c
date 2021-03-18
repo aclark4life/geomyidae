@@ -48,6 +48,7 @@ enum {
 
 int glfd = -1;
 int dosyslog = 0;
+int logpriority = LOG_INFO|LOG_DAEMON;
 int loglvl = 47;
 int revlookup = 1;
 char *logfile = NULL;
@@ -110,7 +111,8 @@ logentry(char *host, char *port, char *qry, char *status)
         if (glfd >= 0 || dosyslog) {
 		ahost = revlookup ? reverselookup(host) : host;
 		if (dosyslog) {
-			syslog("[%s|%s|%s] %s\n", ahost, port, status, qry);
+			syslog(logpriority, "[%s|%s|%s] %s\n", ahost, port,
+					status, qry);
 		} else {
 			tim = time(0);
 			ptr = gmtime(&tim);
@@ -601,11 +603,8 @@ main(int argc, char *argv[])
 	}
 
 	if (dosyslog) {
-		if (!dofork) {
-			openlog("geomyidae", LOG_CONS|LOG_PERROR, LOG_DAEMON|LOG_INFO);
-		} else {
-			openlog("geomyidae", LOG_NDELAY|LOG_PID, LOG_DAEMON|LOG_INFO);
-		}
+		openlog("geomyidae", dofork? LOG_NDELAY|LOG_PID \
+				: LOG_CONS|LOG_PERROR, logpriority);
 	} else if (logfile != NULL) {
 		glfd = open(logfile, O_APPEND | O_WRONLY | O_CREAT, 0644);
 		if (glfd < 0) {
