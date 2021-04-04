@@ -403,8 +403,8 @@ scanfile(char *fname)
 int
 printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 {
-	char *path, *p, buf[PATH_MAX+1];
-	int len;
+	char *path, *p, *argbase, buf[PATH_MAX+1];
+	int len, blen;
 
 	if (!strcmp(el->e[3], "server")) {
 		free(el->e[3]);
@@ -417,24 +417,36 @@ printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 
 	/*
 	 * Ignore if the path is from base, if it might be some h type with
-	 * some URL and ignore various types that have different semantics but
-	 * to point to some file or directory.
+	 * some URL and ignore various types that have different semantics,
+	 * do not point to some file or directory.
+	 */
+	/*
+	 * FUTURE: If ever special requests with no beginning '/' are used in
+	 * geomyidae, this is the place to control this.
 	 */
 	if ((el->e[2][0] != '\0'
-	    && el->e[2][0] != '/'
-	    && el->e[0][0] != 'i'
-	    && el->e[0][0] != '2'
-	    && el->e[0][0] != '3'
-	    && el->e[0][0] != '8'
-	    && el->e[0][0] != 'w'
-	    && el->e[0][0] != 'T') &&
+	    && el->e[2][0] != '/' /* Absolute Request. */
+	    && el->e[0][0] != 'i' /* Informational item. */
+	    && el->e[0][0] != '2' /* CSO server */
+	    && el->e[0][0] != '3' /* Error */
+	    && el->e[0][0] != '8' /* Telnet */
+	    && el->e[0][0] != 'w' /* Selector is direct URI. */
+	    && el->e[0][0] != 'T') && /* tn3270 */
 	    !(el->e[0][0] == 'h' && !strncmp(el->e[2], "URL:", 4))) {
 		path = file + strlen(base);
 		if ((p = strrchr(path, '/')))
 			len = p - path;
 		else
 			len = strlen(path);
-		snprintf(buf, sizeof(buf), "%s%.*s/%s", base, len, path, el->e[2]);
+
+		argbase = strchr(el->e[2], '?');
+		if (argbase != NULL)
+			blen = argbase - el->e[2];
+		else
+			blen = strlen(el->e[2]);
+
+		snprintf(buf, sizeof(buf), "%s%.*s/%.*s", base, len,
+			path, blen, el->e[2]);
 
 		if ((path = realpath(buf, NULL)) &&
 				!strncmp(base, path, strlen(base))) {

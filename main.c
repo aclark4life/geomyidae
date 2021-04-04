@@ -177,6 +177,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 
 	memmove(recvc, recvb, rlen+1);
 
+	/* Redirect to HTML redirecting to the specified URI. */
 	if (!strncmp(recvb, "URL:", 4)) {
 		len = snprintf(path, sizeof(path), htredir,
 				recvb + 4, recvb + 4, recvb + 4);
@@ -189,8 +190,8 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	}
 
 	/*
-	 * Valid cases in gopher we overwrite here, but could be used for
-	 * other geomyidae features:
+	 * FUTURE: Valid cases in gopher we overwrite here, but could be used
+	 * for other geomyidae features:
 	 *
 	 *	request string = "?..." -> "/?..."
 	 *	request string = "" -> "/"
@@ -198,6 +199,9 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	 *
 	 * Be careful, when you consider those special cases to be used
 	 * for some feature. You can easily do good and bad.
+	 *
+	 * Look at printelem() in ind.c for the counterpart of producing
+	 * selectors.
 	 */
 
 	args = strchr(recvb, '?');
@@ -209,6 +213,10 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		recvb[1] = '\0';
 	}
 
+	/*
+	 * Do not allow requests not beginning with '/' or which contain
+	 * "..".
+	 */
 	if (recvb[0] != '/' || strstr(recvb, "..")){
 		dprintf(sock, "%s", selinval);
 		return;
