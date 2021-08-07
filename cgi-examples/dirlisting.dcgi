@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# List all .md files in some directory and show a dir listing.
+#
+
+find *.md -printf "[0|%TY-%Tm-%Td    %f|%f|server|port]\r\n" | sort -r
+
