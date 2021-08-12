@@ -1,69 +1,85 @@
-From 38a2a15d8b803ce5b725a6cb1f2b3ac75ab686c7 Mon Sep 17 00:00:00 2001
-From: root <ian@contractcoder.biz>
-Date: Fri, 6 Aug 2021 20:09:46 +0100
-Subject: [PATCH] Modification to allow directories to be ordered by date by
- adding a file named .datesort to the directory.
-
----
- handlr.c | 38 +++++++++++++++++++++++++++++++++++++-
- 1 file changed, 37 insertions(+), 1 deletion(-)
-
 diff --git a/handlr.c b/handlr.c
-index 0c230d3..e2e35a8 100644
+index 0c230d3..5f5a767 100644
 --- a/handlr.c
 +++ b/handlr.c
-@@ -21,6 +21,33 @@
+@@ -3,6 +3,7 @@
+  * by 20h
+  */
+ 
++#include <limits.h>
+ #include <unistd.h>
+ #include <memory.h>
+ #include <netdb.h>
+@@ -21,13 +22,48 @@
  #include "ind.h"
  #include "arg.h"
  
-+char DIR_PATH[PATH_MAX]; 
-+int datesort (const struct dirent **, const struct dirent **);
++char dir_path[PATH_MAX];
++int datesort(const struct dirent **, const struct dirent **);
 +
 +int
 +datesort(const struct dirent **a, const struct dirent **b)
 +{
-+    int rval;
-+    struct stat sbuf1, sbuf2;
-+    char path1[PATH_MAX], path2[PATH_MAX];
-+    
-+    snprintf(path1, PATH_MAX, "%s/%s", DIR_PATH, (*a)->d_name);
-+    snprintf(path2, PATH_MAX, "%s/%s", DIR_PATH, (*b)->d_name);
-+    
-+    rval = stat(path1, &sbuf1);
-+    if (rval) {
-+        perror("stat");
-+        return 0;
-+    }
-+    rval = stat(path2, &sbuf2);
-+    if (rval) {
-+        perror("stat");
-+        return 0;
-+    }
-+                            
-+    return sbuf1.st_mtime < sbuf2.st_mtime;
++	struct stat sbuf1, sbuf2;
++	char path1[PATH_MAX], path2[PATH_MAX];
++	int rv;
++
++	rv = snprintf(path1, sizeof(path1), "%s/%s", dir_path, (*a)->d_name);
++	if (rv < 0 || (size_t)rv >= sizeof(path1)) {
++		perror("snprintf");
++		return 0;
++	}
++	rv = snprintf(path2, sizeof(path2), "%s/%s", dir_path, (*b)->d_name);
++	if (rv < 0 || (size_t)rv >= sizeof(path2)) {
++		perror("snprintf");
++		return 0;
++	}
++
++	if (stat(path1, &sbuf1)) {
++		perror("stat");
++		return 0;
++	}
++	if (stat(path2, &sbuf2)) {
++		perror("stat");
++		return 0;
++	}
++
++	return sbuf1.st_mtime < sbuf2.st_mtime ? -1 : sbuf1.st_mtime > sbuf2.st_mtime;
 +}
 +
  void
  handledir(int sock, char *path, char *port, char *base, char *args,
  		char *sear, char *ohost, char *chost, int istls)
-@@ -48,7 +75,16 @@ handledir(int sock, char *path, char *port, char *base, char *args,
+ {
++	int (*sortorder) (const struct dirent **, const struct dirent **);
++	char ds[PATH_MAX];
+ 	char *pa, *file, *e, *par, *b;
+ 	struct dirent **dirent;
+-	int ndir, i, ret = 0;
++	int ndir, i, ret = 0, rv;
+ 	struct stat st;
+ 	filetype *type;
+ 
+@@ -48,7 +84,21 @@ handledir(int sock, char *path, char *port, char *base, char *args,
  	}
  	free(par);
  
 -	ndir = scandir(pa[0] ? pa : ".", &dirent, 0, alphasort);
-+	strcpy(DIR_PATH, pa);
++	rv = snprintf(dir_path, sizeof(dir_path), "%s", pa);
++	if (rv < 0 || (size_t)rv >= sizeof(dir_path)) {
++		perror("snprintf");
++		return;
++	}
 +
-+	char ds[PATH_MAX];
-+	strcpy(ds, pa);
-+       	strcat(ds, "/.datesort");
++	rv = snprintf(ds, sizeof(ds), "%s/.datesort", pa);
++	if (rv < 0 || (size_t)rv >= sizeof(ds)) {
++		perror("snprintf");
++		return;
++	}
 +
-+	int (*sortorder) (const struct dirent **, const struct dirent **) =\
-+        	(access(ds, F_OK) != -1) ? datesort : alphasort;
-+	
++	sortorder = access(ds, F_OK) != -1 ? datesort : alphasort;
++
 +	ndir = scandir(pa[0] ? pa : ".", &dirent, 0, sortorder);
  	if (ndir < 0) {
  		perror("scandir");
  		free(pa);
--- 
-2.20.1
-
