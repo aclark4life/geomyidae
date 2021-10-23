@@ -52,6 +52,7 @@ filetype type[] = {
 	{"png", "I", handlebin},
 	{"bmp", "I", handlebin},
 	{"txt", "0", handlebin},
+	{"vtt", "0", handlebin},
 	{"html", "0", handlebin},
 	{"htm", "0", handlebin},
 	{"xhtml", "0", handlebin},
