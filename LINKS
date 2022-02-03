@@ -3,6 +3,8 @@
 ## Converters
 * gophermap2gph converter, tab raw format to gph
 	* gopher://shroom.party/1/code/gophermap2gph/file/README.gph
+* gmap2gph, a simpler raw format to gph version
+	* git://git.katolaz.net/gopherutils
 
 ## Interfaces
 * git interface
