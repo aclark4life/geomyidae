@@ -1,0 +1,14 @@
+[Unit]
+Description=Geomyidae Gopher Server
+After=network.target
+Wants=network.target
+StartLimitBurst=5
+StartLimitIntervalSec=1
+[Service]
+Type=forking
+Restart=on-abnormal
+RestartSec=1
+User=root
+ExecStart=/usr/local/sbin/geomyidae -l /var/log/geomyidae.log -b /var/gopher -p 70
+[Install]
+WantedBy=multi-user.target
