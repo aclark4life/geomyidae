@@ -279,8 +279,10 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	if (stat(path, &dir) != -1) {
 		if ((dir.st_mode & S_ISVTX) && !istls) {
 			dprintf(sock, tlserr, recvc);
-			if (loglvl & ERRORS)
-				logentry(clienth, clientp, recvc, "not found");
+			if (loglvl & ERRORS) {
+				logentry(clienth, clientp, recvc,
+					"encryption only");
+			}
 			return;
 		}
 
