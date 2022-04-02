@@ -65,6 +65,8 @@ char *nocgierr = "3Sorry, execution of the token '%s' was requested, but this "
 	    "\tlocalhost\t70\r\n";
 char *notfounderr = "3Sorry, but the requested token '%s' could not be found.\tErr"
 	    "\tlocalhost\t70\r\n";
+char *toolongerr = "3Sorry, but the requested token '%s' is a too long path.\tErr"
+	    "\tlocalhost\t70\r\n";
 char *htredir = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 		"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
 		"	\"DTD/xhtml-transitional.dtd\">\n"
@@ -133,13 +135,16 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	      int istls)
 {
 	struct stat dir;
-	char recvc[1025], recvb[1025], path[1025], *args = NULL, *sear, *c;
+	char recvc[1025], recvb[1025], path[1025], args[1025], argsc[1025],
+		*sear, *c, *sep, *pathp, *recvbp;
 	int len = 0, fd, i, maxrecv;
 	filetype *type;
 
 	memset(&dir, 0, sizeof(dir));
 	memset(recvb, 0, sizeof(recvb));
 	memset(recvc, 0, sizeof(recvc));
+	memset(args, 0, sizeof(args));
+	memset(argsc, 0, sizeof(argsc));
 
 	maxrecv = sizeof(recvb) - 1;
 	if (rlen > maxrecv || rlen < 0)
@@ -204,9 +209,11 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	 * selectors.
 	 */
 
-	args = strchr(recvb, '?');
-	if (args != NULL)
-		*args++ = '\0';
+	c = strchr(recvb, '?');
+	if (c != NULL) {
+		*c++ = '\0';
+		snprintf(args, sizeof(args), "%s", c);
+	}
 
 	if (recvb[0] == '\0') {
 		recvb[0] = '/';
@@ -222,31 +229,81 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		return;
 	}
 
-	snprintf(path, sizeof(path), "%s%s", base, recvb);
+	if (snprintf(path, sizeof(path), "%s%s", base, recvb) > sizeof(path)) {
+		if (loglvl & ERRORS) {
+			logentry(clienth, clientp, recvc,
+				"path truncation occurred");
+		}
+		dprintf(sock, toolongerr, recvc);
+		return;
+	}
 
 	fd = -1;
-	if (stat(path, &dir) != -1 && S_ISDIR(dir.st_mode)) {
-		for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]); i++) {
-			if (strlen(path) + strlen(indexf[i]) >= sizeof(path)) {
+	/*
+	 * If path could not be found, do:
+	 * 1.) Traverse from base directory one dir by dir.
+	 * 2.) If one path element, separated by "/", is not found, stop.
+	 * 3.) Prepare new args string:
+	 *
+	 *	$args = $rest_of_path + "?" + $args
+	 */
+	if (stat(path, &dir) == -1) {
+		memmove(argsc, args, strlen(args));
+		snprintf(path, sizeof(path), "%s", base);
+		recvbp = recvb + 1;
+		while (recvbp != NULL) {
+			sep = strsep(&recvbp, "/");
+			snprintf(path+strlen(path), sizeof(path)-strlen(path),
+				"/%s", sep);
+			if (stat(path, &dir) == -1) {
+				c = strrchr(path, '/');
+				if (c != NULL) {
+					*c++ = '\0';
+					snprintf(args, sizeof(args),
+						"/%s%s%s%s%s",
+						c,
+						(recvbp != NULL)? "/" : "",
+						(recvbp != NULL)? recvbp : "",
+						(argsc[0] != '\0')? "?" : "",
+						(argsc[0] != '\0')? argsc : ""
+					);
+				}
+				/* path fallthrough */
+				break;
+			}
+		}
+	}
+
+	if (stat(path, &dir) != -1) {
+		if (S_ISDIR(dir.st_mode)) {
+			for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]);
+					i++) {
+				if (strlen(path) + strlen(indexf[i])
+						>= sizeof(path)) {
+					if (loglvl & ERRORS) {
+						logentry(clienth, clientp,
+							recvc,
+							"path truncation occurred");
+					}
+					return;
+				}
+				strncat(path, indexf[i],
+						sizeof(path)-strlen(path)-1);
+				fd = open(path, O_RDONLY);
+				if (fd >= 0)
+					break;
+				path[strlen(path)-strlen(indexf[i])] = '\0';
+			}
+		} else {
+			fd = open(path, O_RDONLY);
+			if (fd < 0) {
+				dprintf(sock, notfounderr, recvc);
 				if (loglvl & ERRORS) {
 					logentry(clienth, clientp, recvc,
-					         "path truncation occurred");
+						strerror(errno));
 				}
 				return;
 			}
-			strncat(path, indexf[i], sizeof(path) - strlen(path) - 1);
-			fd = open(path, O_RDONLY);
-			if (fd >= 0)
-				break;
-			path[strlen(path)-strlen(indexf[i])] = '\0';
-		}
-	} else {
-		fd = open(path, O_RDONLY);
-		if (fd < 0) {
-			dprintf(sock, notfounderr, recvc);
-			if (loglvl & ERRORS)
-				logentry(clienth, clientp, recvc, strerror(errno));
-			return;
 		}
 	}
 

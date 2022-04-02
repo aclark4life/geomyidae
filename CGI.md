@@ -59,6 +59,25 @@ If both ways of input are combined, the variables are set as following:
 	-> $host = server host
 	-> $port = server port
 
+## REST CALLING CONVENTION
+
+There is a special mode in geomyidae to imitate REST calling abilities.
+
+When a user requests some non-existing path, geomyidae will start from
+the base and go up the path directories, until it reaches the first not
+existing directory.
+
+	C: /base/some/dir/that/does/not/exist?some-arguments	searchterm
+	-> /base exists
+	-> /some exists
+	-> /dir does not exist
+	-> search for index.cgi or index.dcgi in /base/some
+	-> if not found, display directory content
+	-> if found, call index.cgi or index.dcgi as follows:
+		-> $search = »searchterm«
+		-> $arguments = »/dir/that/does/not/exist?some-arguments«
+		-> $host = server host
+		-> $port = server port
 
 ## STANDARD CGI
 

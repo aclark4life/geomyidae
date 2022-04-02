@@ -347,13 +347,16 @@ Both .cgi and .dcgi scripts have the same argument call structure (as seen by ge
 where
 .Pp
 .D1 search = query string (type 7) or Qo Qc (type 0)
-.D1 arguments = string after Qo ? Qc in the path or Qo Qc
+.D1 arguments = string after Qo ? Qc in the path, the remaining path or Qo Qc
 .D1 host = server's hostname ("localhost" by default)
 .D1 port = server's port ("70" by default)
 .Pp
 All terms are tab-separated (per gopher protocol) which can cause some
 surprises depending on how a script is written.  See the CGI file (included
 in the geomyidae source archive) for further elaboration.
+.Pp
+For a special REST path case for the arguments, see the CGI file for the
+description.
 .Pp
 QUIRK: The original gopher client tried to be too intelligent. It is using
 gopher+ when you request some resource. When "search" is just the value "+",

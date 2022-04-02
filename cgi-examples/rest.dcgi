@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Simple gopher REST interpretation.
+#
+
+if [ -n "$2" ];
+then
+	case "$2" in
+	/articles*)
+		printf "Article 1\n";
+		printf "Article 2\n";
+		;;
+	/read*)
+		printf "Read me!\n";
+		;;
+	/write*)
+		printf "Write me!\n";
+		;;
+	*)
+		;;
+	esac	
+fi
+
