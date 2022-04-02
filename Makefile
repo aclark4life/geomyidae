@@ -6,7 +6,7 @@ NAME = geomyidae
 VERSION = 0.34
 
 PREFIX = /usr/local
-BINDIR = ${PREFIX}/sbin
+BINDIR = ${PREFIX}/bin
 MANDIR = ${PREFIX}/share/man/man8
 
 # Comment to disable TLS support
