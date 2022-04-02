@@ -5,6 +5,7 @@
 #
 
 [ -f map.gph ] && cat map.gph
+[ -f .abstract ] && cat .abstract
 
 find *.md -printf "[0|%TY-%Tm-%Td    %f|%f|server|port]\r\n" | sort -r
 
