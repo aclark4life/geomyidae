@@ -228,9 +228,10 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	if (stat(path, &dir) != -1 && S_ISDIR(dir.st_mode)) {
 		for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]); i++) {
 			if (strlen(path) + strlen(indexf[i]) >= sizeof(path)) {
-				if (loglvl & ERRORS)
+				if (loglvl & ERRORS) {
 					logentry(clienth, clientp, recvc,
 					         "path truncation occurred");
+				}
 				return;
 			}
 			strncat(path, indexf[i], sizeof(path) - strlen(path) - 1);
