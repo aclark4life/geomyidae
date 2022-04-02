@@ -170,7 +170,8 @@ Activate gopher TLS and use the private key
 .Ar keyfile
 and the public key
 .Ar certfile
-for TLS connections (if the feature is compiled in.)
+for TLS connections (if the feature is compiled in.) See ENCRYPTION ONLY
+support below.
 .El
 .
 .Sh FORMATTING
@@ -526,6 +527,10 @@ ex.
 .D1 Qo "/PICS/simple2.jpg" Qc for an image file
 .D1 Qo "/PICS" Qc for a directory access
 .El
+.
+.Sh ENCRYPTION ONLY
+If you set the sticky bit (chmod +t) on some file or directory, geomyidae
+will only serve it over an encrypted connection.
 .
 .Sh FILES
 README, LICENSE, CGI, index.gph, rc.d/, LINKS, gph/

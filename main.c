@@ -67,6 +67,8 @@ char *notfounderr = "3Sorry, but the requested token '%s' could not be found.\tE
 	    "\tlocalhost\t70\r\n";
 char *toolongerr = "3Sorry, but the requested token '%s' is a too long path.\tErr"
 	    "\tlocalhost\t70\r\n";
+char *tlserr = "3Sorry, but the requested token '%s' requires an encrypted connection.\tErr"
+	    "\tlocalhost\t70\r\n";
 char *htredir = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 		"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
 		"	\"DTD/xhtml-transitional.dtd\">\n"
@@ -275,6 +277,13 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	}
 
 	if (stat(path, &dir) != -1) {
+		if ((dir.st_mode & S_ISVTX) && !istls) {
+			dprintf(sock, tlserr, recvc);
+			if (loglvl & ERRORS)
+				logentry(clienth, clientp, recvc, "not found");
+			return;
+		}
+
 		if (S_ISDIR(dir.st_mode)) {
 			for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]);
 					i++) {
