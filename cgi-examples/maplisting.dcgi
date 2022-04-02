@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# List all .md files in some directory and show a dir listing.
+# Display map.gph first.
+#
+
+[ -f map.gph ] && cat map.gph
+
+find *.md -printf "[0|%TY-%Tm-%Td    %f|%f|server|port]\r\n" | sort -r
+
