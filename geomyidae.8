@@ -55,8 +55,9 @@ commands.  The resulting executable should be run by root.
 .Ss Basic Installation and Startup:
 .Bd -literal
 
-     $ wget http://www.r-36.net/src/geomyidae/geomyidae-current.tgz
-     $ tar -xzvf geomyidae-*.tgz
+     $ wget ftp://bitreich.org/releases/geomyidae/geomyidae-$VERSION.tar.lz
+     $ lzip -d geomyidae-$VERSION.tar.lz
+     $ tar -xvf geomyidae-*.tar
      $ cd geomyidae-*
      $ make; sudo make install
      $ sudo mkdir -p /var/gopher
@@ -64,8 +65,8 @@ commands.  The resulting executable should be run by root.
      $ sudo geomyidae -l /var/log/geomyidae.log -b /var/gopher -p 70
      $ tail -f /var/log/geomyidae.log
 
-     Use whatever gopher client you like (ie. lynx) to browse:
-     $ lynx gopher://localhost
+     Use whatever gopher client you like (ie. sacc) to browse:
+     $ sacc gopher://localhost
 .Ed
 .
 .Ss Running
