@@ -1,7 +1,39 @@
 #!/bin/sh
 #
-# List all .md files in some directory and show a dir listing.
+# Dir listing example.
+#
+# Entry definition in .Links, .cap/$file or .names:
+#  Name=, Type=, Path=, Host=, Port=, Numb=, Abstract=, Admin=, URL=, TTL=
 #
 
-find *.md -printf "[0|%TY-%Tm-%Td    %f|%f|server|port]\r\n" | sort -r
+[ -f .abstract ] && cat .abstract | sed 's/^t/&&/'
+
+find . -maxdepth 1 \
+| sort -r \
+| cut -d'/' -f 2- \
+| grep -v "^\." \
+| while read -r entry;
+do
+	[ "${entry}" == ".cap" ] && continue
+	[ "${entry}" == ".Links" ] && continue
+	[ "${entry}" == ".names" ] && continue
+
+	entrytype="9"
+	[ -d "${entry}" ] && entrytype="1"
+
+	entryserver="server"
+	entryport="port"
+	entryname="%f"
+	if [ -f ".cap/$entry" ];
+	then
+		entryname="$(cat ".cap/$entry" \
+			| grep "^Name=" \
+			| cut -d'=' -f 2-)"
+	fi
+	[ -z "${entryname}" ] && entryname="%f"
+
+	find "${entry}" \
+		-maxdepth 0 \
+		-printf "[${entrytype}|%TY-%Tm-%Td    ${entryname}|%f|${entryserver}|${entryport}]\r\n"
+done
 
