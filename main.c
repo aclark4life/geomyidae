@@ -142,6 +142,19 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	int len = 0, fd, i, maxrecv;
 	filetype *type;
 
+	if (!istls) {
+		if (stat(base, &dir) == -1)
+			return;
+		if (dir.st_mode & S_ISVTX) {
+			dprintf(sock, tlserr, recvc);
+			if (loglvl & ERRORS) {
+				logentry(clienth, clientp, recvc,
+					"encryption only");
+			}
+			return;
+		}
+	}
+
 	memset(&dir, 0, sizeof(dir));
 	memset(recvb, 0, sizeof(recvb));
 	memset(recvc, 0, sizeof(recvc));

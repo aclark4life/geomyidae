@@ -530,7 +530,10 @@ ex.
 .
 .Sh ENCRYPTION ONLY
 If you set the sticky bit (chmod +t) on some file or directory, geomyidae
-will only serve it over an encrypted connection.
+will only serve it over an encrypted connection. There is the special
+case, that when the sticky bit is set on the
+.Ar base
+directory, all content will only be served over tls.
 .
 .Sh FILES
 README, LICENSE, CGI, index.gph, rc.d/, LINKS, gph/
