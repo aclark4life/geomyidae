@@ -96,12 +96,15 @@ def main(args):
 		fd.close()
 
 	outputlinks = {}
+	numblinks = {}
 
 	linkspath = "%s/.Links" % (basedir)
 	if os.path.exists(linkspath):
 		linkslinks = parselinksfile(linkspath)
 		for linkkey in linkslinks.keys():
 			outputlinks[linkkey]  = linkslinks[linkkey]
+			if "number" in linkslinks[linkkey]:
+				numblinks[linkkey] = linkslinks[linkkey]
 
 	entries = os.listdir(basedir)
 	for entry in entries:
@@ -116,6 +119,8 @@ def main(args):
 		if os.path.exists(capspath):
 			caplink = parselinksfile(capspath, entrylink)
 		outputlinks[entrylink["path"]] = entrylink
+		if "number" in entrylink:
+			numblinks[entrylink["path"]] = entrylink
 
 	namespath = "%s/.names" % (basedir)
 	if os.path.exists(namespath):
@@ -128,6 +133,9 @@ def main(args):
 						namelink[key]
 			else:
 				outputlinks[namekey] = nameslinks[namekey]
+			if "number" in outputlinks[namekey]:
+				numblinks[namekey] = outputlinks[namekey]
+
 	displaylinks = {}
 	for link in outputlinks.keys():
 		if "name" in outputlinks[link]:
@@ -143,13 +151,41 @@ def main(args):
 			displaylinks[link] = link
 
 	displaykeys = sorted(displaylinks)
-	for key in displaykeys:
-		path = displaylinks[key]
-		if path == "./.Links" or \
-				path == "./.cap" or \
-				path == "./.names" or \
-				path == "./.abstract":
-			continue
+	for dotfile in [".Links", ".names", ".cap", ".abstract"]:
+		try:
+			displaykeys.remove(dotfile)
+		except ValueError:
+			pass
+
+	# This is why the UMN format really sucks.
+	numbers = {}
+	for numb in numblinks.keys():
+		link = outputlinks[numb]
+		numbers[link["number"]] = outputlinks[numb]
+		if "name" in link:
+			displaykeys.remove(link["name"])
+		elif "path" in link:
+			if link["path"].startswith("./"):
+				displaykeys.remove(link["path"][2:])
+			else:
+				displaykeys.remove(link["path"])
+
+	curnumber = 1
+	while 1:
+		if curnumber in numbers.keys():
+			path = numbers[curnumber]["path"]
+			numbers.pop(curnumber)
+		else:
+			key = displaykeys.pop()
+			path = displaylinks[key]
+
+		# Work on the rest of the numbered links, when no display
+		# entries are left.
+		if len(displaykeys) == 0:
+			if len(numbers) == 0:
+				break
+			randnumb = numbers.pop()
+			path = randnumb["path"]
 
 		link = outputlinks[path]
 		if "port" not in link:
@@ -173,6 +209,8 @@ def main(args):
 
 		if "abstract" in link:
 			dcgifilterprint(link["abstract"].split("\n"))
+
+		curnumber += 1
 
 	return 0
 
