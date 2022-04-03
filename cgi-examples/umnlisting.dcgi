@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+# coding=utf-8
+#
+# Dir listing like in UMN gopher.
+#
+# Files: .abstract, .names, .cap/$file, .Links
+# Entries: Name=, Type=, Path=, Host=, Port=, Abstract=, Admin=, URL=,
+#          TTL=
+#
+
+import os
+import sys
+
+def dcgifilterprint(lines):
+	for line in lines:
+		line = line.strip()
+		if line[0] == 't':
+			print("t%s" % (line))
+		else:
+			print("%s" % (line))
+
+def parselinksfile(filepath, link={}):
+	fd = open(filepath, "r")
+	links = {}
+	while 1:
+		line = fd.readline()
+		if not line:
+			if "path" in link:
+				links[link["path"]] = link
+				link = {}
+			break
+		line = line.strip()
+		if len(line) == 0 or line.startswith("#"):
+			if "path" in link:
+				links[link["path"]] = link
+				link = {}
+			continue
+		elif line.startswith("Type="):
+			link["type"] = line.split("=", 1)[1]
+		elif line.startswith("Name="):
+			link["name"] = line.split("=", 1)[1]
+		elif line.startswith("Path="):
+			link["path"] = line.split("=", 1)[1]
+		elif line.startswith("Host="):
+			link["host"] = line.split("=", 1)[1]
+		elif line.startswith("Port="):
+			link["port"] = line.split("=", 1)[1]
+		elif line.startswith("Numb="):
+			try:
+				link["number"] = int(line.split("=", 1)[1])
+			except ValueError:
+				pass
+		elif line.startswith("Abstract="):
+			link["abstract"] = line.split("=", 1)[1]
+			while link["abstract"][-1] == "\\":
+				link["abstract"] = link["abstract"][:-1]
+				link["abstract"] += "\n"
+				link["abstract"] += fd.readline().strip()
+
+			# Undefined case in UMN. Handle it nicely.
+			if link["abstract"][-1] == "\\":
+				link["abstract"][-1] = "\n"
+		elif line.startswith("Admin="):
+			link["admin"] = line.split("=", 1)[1]
+		elif line.startswith("URL="):
+			link["url"] = line.split("=", 1)[1]
+		elif line.startswith("TTL="):
+			link["ttl"] = line.split("=", 1)[1]
+	fd.close()
+
+	return links
+
+def usage(app):
+	print("usage: %s search arguments host port" % (app),
+			file=sys.stderr)
+	sys.exit(1)
+
+def main(args):
+	scriptname = os.path.basename(args[0])
+	if len(args) < 5:
+		usage(scriptname)
+	search = args[1]
+	arguments = args[2]
+	host = args[3]
+	port = args[4]
+
+	basedir = "."
+	if len(arguments) > 0 and arguments[0] == "/":
+		basedir = arguments[0].split("?")[0]
+
+	# First print every .abstract file content.
+	abstractpath = "%s/.abstract" % (basedir)
+	if os.path.exists(abstractpath):
+		fd = open(abstractpath, "r")
+		dcgifilterprint(fd.readlines())
+		fd.close()
+
+	outputlinks = {}
+
+	linkspath = "%s/.Links" % (basedir)
+	if os.path.exists(linkspath):
+		linkslinks = parselinksfile(linkspath)
+		for linkkey in linkslinks.keys():
+			outputlinks[linkkey]  = linkslinks[linkkey]
+
+	entries = os.listdir(basedir)
+	for entry in entries:
+		entrylink = {}
+		entrylink["type"] = "9"
+		if os.path.isdir(entry):
+			entrylink["type"] = "1"
+
+		entrylink["path"] = "./%s" % (entry)
+		entrylink["name"] = entry
+		capspath = "%s/.cap/%s" % (basedir, entry)
+		if os.path.exists(capspath):
+			caplink = parselinksfile(capspath, entrylink)
+		outputlinks[entrylink["path"]] = entrylink
+
+	namespath = "%s/.names" % (basedir)
+	if os.path.exists(namespath):
+		nameslinks = parselinksfile(namespath)
+		for namekey in nameslinks.keys():
+			namelink = nameslinks[namekey]
+			if namekey in outputlinks.keys():
+				for key in namelink:
+					outputlinks[namekey][key] = \
+						namelink[key]
+			else:
+				outputlinks[namekey] = nameslinks[namekey]
+	displaylinks = {}
+	for link in outputlinks.keys():
+		if "name" in outputlinks[link]:
+			displaylinks[outputlinks[link]["name"]] = link
+		elif "path" in outputlinks[link]:
+			if outputlinks[link]["path"].startswith("./"):
+				displaylinks[outputlinks[link]["path"][2:]] = \
+					link
+			else:
+				displaylinks[outputlinks[link]["path"]] = \
+					link
+		else:
+			displaylinks[link] = link
+
+	displaykeys = sorted(displaylinks)
+	for key in displaykeys:
+		path = displaylinks[key]
+		if path == "./.Links" or \
+				path == "./.cap" or \
+				path == "./.names" or \
+				path == "./.abstract":
+			continue
+
+		link = outputlinks[path]
+		if "port" not in link:
+			link["port"] = "port"
+		if "host" not in link:
+			link["host"] = "server"
+		if "name" not in link:
+			if link["path"].startswith("./"):
+				link["name"] = link["path"][2:]
+			else:
+				link["name"] = link["path"]
+		if "type" not in link:
+			link["type"] = "9"
+
+		# dcgi escaping.
+		link["name"].replace("|", "\\|")
+
+		print("[%s|%s|%s|%s|%s]" % (link["type"][0],\
+			link["name"], link["path"], link["host"],\
+			link["port"]))
+
+		if "abstract" in link:
+			dcgifilterprint(link["abstract"].split("\n"))
+
+	return 0
+
+if __name__ == "__main__":
+	sys.exit(main(sys.argv))
+
