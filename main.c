@@ -139,10 +139,14 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	struct stat dir;
 	char recvc[1025], recvb[1025], path[1025], args[1025], argsc[1025],
 		*sear, *c, *sep, *pathp, *recvbp;
-	int len = 0, fd, i, maxrecv;
+	int len = 0, fd, i, maxrecv, pathfallthrough = 0;
 	filetype *type;
 
 	if (!istls) {
+		/*
+		 * If sticky bit is set on base dir and encryption is not
+		 * used, do not serve.
+		 */
 		if (stat(base, &dir) == -1)
 			return;
 		if (dir.st_mode & S_ISVTX) {
@@ -284,12 +288,16 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 					);
 				}
 				/* path fallthrough */
+				pathfallthrough = 1;
 				break;
 			}
 		}
 	}
 
 	if (stat(path, &dir) != -1) {
+		/*
+		 * If sticky bit is set, only serve if this is encrypted.
+		 */
 		if ((dir.st_mode & S_ISVTX) && !istls) {
 			dprintf(sock, tlserr, recvc);
 			if (loglvl & ERRORS) {
@@ -340,6 +348,19 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		if (c == NULL)
 			c = path;
 		type = gettype(c);
+
+		/*
+		 * If we had to traverse the path to find some, only
+		 * allow index.dcgi and index.cgi as handlers.
+		 */
+		if (pathfallthrough &&
+				!(type->f == handledcgi || type->f == handlecgi)) {
+			dprintf(sock, notfounderr, recvc);
+			if (loglvl & ERRORS)
+				logentry(clienth, clientp, recvc, "not found");
+			return;
+		}
+
 		if (nocgi && (type->f == handledcgi || type->f == handlecgi)) {
 			dprintf(sock, nocgierr, recvc);
 			if (loglvl & ERRORS)
@@ -349,7 +370,11 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 				clienth, istls);
 		}
 	} else {
-		if (S_ISDIR(dir.st_mode)) {
+		/*
+		 * If we had to traverse the path, do not allow directory
+		 * listings, only dynamic content.
+		 */
+		if (!pathfallthrough && S_ISDIR(dir.st_mode)) {
 			handledir(sock, path, port, base, args, sear, ohost,
 				clienth, istls);
 			if (loglvl & DIRS) {
