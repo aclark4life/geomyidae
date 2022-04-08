@@ -138,7 +138,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 {
 	struct stat dir;
 	char recvc[1025], recvb[1025], path[1025], args[1025], argsc[1025],
-		*sear, *c, *sep, *pathp, *recvbp;
+		*sear, *c, *sep, *recvbp;
 	int len = 0, fd, i, maxrecv, pathfallthrough = 0;
 	filetype *type;
 
