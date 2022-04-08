@@ -781,7 +781,7 @@ main(int argc, char *argv[])
 			perror("chdir");
 			return 1;
 		}
-		base = "";
+		base = "/";
 		if (chroot(".") < 0) {
 			perror("chroot");
 			return 1;
