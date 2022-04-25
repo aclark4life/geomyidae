@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/ksh
 #
 # $OpenBSD: geomyidae,v 1.7 2017/06/30 22:06:09 anonymous Exp $
 
