@@ -17,6 +17,10 @@ TLS_LDFLAGS = -ltls
 GEOM_CFLAGS = -D_DEFAULT_SOURCE -I. -I/usr/include ${TLS_CFLAGS} ${CFLAGS}
 GEOM_LDFLAGS = -L/usr/lib -L. ${TLS_LDFLAGS} ${LDFLAGS}
 
+# FreeBSD
+# GEOM_CFLAGS = -D_DEFAULT_SOURCE -I. -I/usr/local/include ${TLS_CFLAGS} ${CFLAGS}
+# GEOM_LDFLAGS = -L/usr/local/lib -L. ${TLS_LDFLAGS} ${LDFLAGS}
+
 SRC = main.c ind.c handlr.c
 OBJ = ${SRC:.c=.o}
 
