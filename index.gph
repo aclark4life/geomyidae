@@ -6,6 +6,7 @@ tcomment
 [0|some \| escape and [ special characters ] test|error|server|port]
 [9|binary data file|/file.dat|server|port]
 [|empty type||server|port]
+[|Escape something
 some	invalid line
 
 

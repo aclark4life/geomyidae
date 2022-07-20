@@ -294,6 +294,9 @@ getadv(char *str)
 		}
 		free(o);
 
+		/*
+		 * TODO: Add new [| escape handling after brcon2022 discussion.
+		 */
 		if (ret->e != NULL && ret->e[0] != NULL && ret->e[0][0] == '\0') {
 			freeelem(ret);
 			ret = xcalloc(1, sizeof(Elems));
