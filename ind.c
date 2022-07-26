@@ -255,12 +255,15 @@ getadv(char *str)
 	char *b, *e, *o, *bo;
 	Elems *ret;
 
+	if (strlen(str) == 0)
+		return NULL;
+
 	ret = xcalloc(1, sizeof(Elems));
 
 	if (strchr(str, '\t')) {
 		addelem(ret, "i");
 		addelem(ret, "Happy helping ☃ here: You tried to "
-			"output a spurious tab character. This will "
+			"output a spurious TAB character. This will "
 			"break gopher. Please review your scripts. "
 			"Have a nice day!");
 		addelem(ret, "Err");
@@ -270,7 +273,8 @@ getadv(char *str)
 		return ret;
 	}
 
-	if (str[0] == '[') {
+	/* Check for escape sequence. */
+	if (str[0] == '[' && str[1] != '|') {
 		o = xstrdup(str);
 		b = o + 1;
 		bo = b;
@@ -294,38 +298,21 @@ getadv(char *str)
 		}
 		free(o);
 
-		/*
-		 * TODO: Add new [| escape handling after brcon2022 discussion.
-		 */
-		if (ret->e != NULL && ret->e[0] != NULL && ret->e[0][0] == '\0') {
-			freeelem(ret);
-			ret = xcalloc(1, sizeof(Elems));
-
-			addelem(ret, "i");
-			addelem(ret, "Happy helping ☃ here: You did not "
-				"specify an item type on this line. Please "
-				"review your scripts. "
-				"Have a nice day!");
-			addelem(ret, "Err");
-			addelem(ret, "server");
-			addelem(ret, "port");
-
+		if (ret->e != NULL && ret->e[0] != NULL &&
+				ret->e[0][0] != '\0' && ret->num == 5) {
 			return ret;
 		}
-
-		if (ret->e != NULL && ret->num == 5)
-			return ret;
 
 		/* Invalid entry: Give back the whole line. */
 		freeelem(ret);
 		ret = xcalloc(1, sizeof(Elems));
 	}
 
-	b = str;
-	if (*str == 't')
-		b++;
 	addelem(ret, "i");
-	addelem(ret, b);
+	/* Jump over escape sequence. */
+	if (str[0] == '[' && str[1] == '|')
+		str += 2;
+	addelem(ret, str);
 	addelem(ret, "Err");
 	addelem(ret, "server");
 	addelem(ret, "port");

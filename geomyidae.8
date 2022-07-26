@@ -257,11 +257,11 @@ Note: geomyidae doesn't require "informational" text to be formally
 Typed as "[i|...]"; any line
 .Em not
 beginning with "[" is treated as informational, greatly simplifying the
-formatting of index.gph files.  However, if a line begins with a "t", this
-"t" is left out.  This quirk is there to allow "informational" text lines
-beginning with a "[" to display.  For dynamically generated index files
-it may be desirable to either formally Type informational text or run
-it through a filter to add a second "t" - .ie sed 's/^t/&&/' .
+formatting of index.gph files. If you want to display some informational
+text beginning with "[" you can use the special case of an empty item
+type. "[|[some link" will be shortened to "[some link". For dynamically
+generated content it may be desirable to either formally type
+informational text or run it through a filter to prepend "[|" - .ie sed 's,^[,[|&,' .
 .Ed
 .Bd -filled
 Note 2: You can escape a pipe ("|") character in for example a
