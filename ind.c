@@ -255,9 +255,6 @@ getadv(char *str)
 	char *b, *e, *o, *bo;
 	Elems *ret;
 
-	if (strlen(str) == 0)
-		return NULL;
-
 	ret = xcalloc(1, sizeof(Elems));
 
 	if (strchr(str, '\t')) {
