@@ -15,7 +15,7 @@ use the -g and -u options of geomyidae.
 
 ## BEFOREHAND
 
-In these examples C: is what the  client sends and S: what the server is
+In these examples C: is what the client sends and S: what the server is
 sending.
 
 
