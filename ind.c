@@ -3,6 +3,10 @@
  * by 20h
  */
 
+#ifdef __linux__
+	#define _GNU_SOURCE
+#endif
+
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
@@ -20,6 +24,10 @@
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <limits.h>
+
+#define PAGE_SHIFT 12
+#define PAGE_SIZE (1UL << PAGE_SHIFT)
+#define BLOCK_SIZE ((PAGE_SIZE * 16) - 1)
 
 #include "arg.h"
 #include "ind.h"
@@ -92,6 +100,43 @@ waitforpendingbytes(int sock)
 	}
 }
 
+#ifdef __linux__
+int
+xsplice(int fd, int sock)
+{
+	int pipefd[2], ret = 0;
+	ssize_t nread, nwritten;
+	off_t in_offset = 0;
+
+	if (pipe(pipefd) < 0) {
+		perror("pipe");
+		_exit(1);
+	}
+
+	do {
+		nread = splice(fd, &in_offset, pipefd[1], NULL,
+			BLOCK_SIZE, SPLICE_F_MOVE | SPLICE_F_MORE);
+
+		if (nread <= 0) {
+			ret = nread < 0 ? 1 : 0;
+			goto out;
+		}
+
+		nwritten  = splice(pipefd[0], NULL, sock, NULL, BLOCK_SIZE, SPLICE_F_MOVE | SPLICE_F_MORE);
+		if (nwritten < 0) {
+			ret = 1;
+			goto out;
+		}
+	} while (nwritten > 0);
+
+out:
+	close(pipefd[0]);
+	close(pipefd[1]);
+
+	return ret;
+}
+#endif
+
 int
 xsendfile(int fd, int sock)
 {
@@ -99,6 +144,10 @@ xsendfile(int fd, int sock)
 	char *sendb, *sendi;
 	size_t bufsiz = BUFSIZ;
 	int len, sent, optval;
+
+#ifdef splice
+	return xsplice(fd, sock);
+#endif
 
 	USED(optval);
 
