@@ -110,7 +110,7 @@ xsplice(int fd, int sock)
 
 	if (pipe(pipefd) < 0) {
 		perror("pipe");
-		_exit(1);
+		exit(1);
 	}
 
 	do {
@@ -122,7 +122,8 @@ xsplice(int fd, int sock)
 			goto out;
 		}
 
-		nwritten  = splice(pipefd[0], NULL, sock, NULL, BLOCK_SIZE, SPLICE_F_MOVE | SPLICE_F_MORE);
+		nwritten  = splice(pipefd[0], NULL, sock, NULL, BLOCK_SIZE,
+				SPLICE_F_MOVE | SPLICE_F_MORE);
 		if (nwritten < 0) {
 			ret = 1;
 			goto out;
