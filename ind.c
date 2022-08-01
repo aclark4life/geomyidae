@@ -108,10 +108,8 @@ xsplice(int fd, int sock)
 	ssize_t nread, nwritten;
 	off_t in_offset = 0;
 
-	if (pipe(pipefd) < 0) {
-		perror("pipe");
-		exit(1);
-	}
+	if (pipe(pipefd) < 0)
+		return -1;
 
 	do {
 		nread = splice(fd, &in_offset, pipefd[1], NULL,
