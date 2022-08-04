@@ -2,9 +2,9 @@
 
 ;; Copyright (C) Troels Henriksen (athas@sigkill.dk) 2022
 ;;
-;; URL: https://github.com/diku-dk/futhark-mode
+;; URL: gopher://sigkill.dk/1/programming
 ;; Keywords: gopher
-;; Version: 1.0
+;; Version: 1.1
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is not part of GNU Emacs.
@@ -15,7 +15,9 @@
 ;;; Commentary:
 ;; .gph is the map file format used by the geomyidae Gopher daemon.
 ;; This Emacs mode provides basic understanding of the link syntax,
-;; such that highlighting and folding works properly.
+;; such that highlighting and folding works properly.  It also
+;; highlights tab characters in pink because these are not allowed in
+;; .gph files.
 ;;
 ;; Files with the ".gph" extension are automatically handled by this mode.
 ;;
@@ -27,6 +29,14 @@
 (eval-when-compile
   (require 'rx))
 
+(defface gph-tabs-face
+  '((((class color)) (:background  "hotpink"))
+    (t (:reverse-video t)))
+  "Face to use for highlighting tabs in Font-Lock mode.")
+
+(defvar gph-tabs 'gph-tabs-face
+  "Face to use for highlighting tabs in Font-Lock mode.")
+
 (defvar gph--font-lock-defaults
   (let* ((type-rx '(or "0" "1" "3" "7" "8" "9" "g" "I" "h" "i"))
          (desc-rx '(* (not "|")))
@@ -36,7 +46,8 @@
          (link-rx `(: line-start "[" ,type-rx "|" ,desc-rx "|" ,path-rx "|" ,host-rx "|" ,port-rx "]"))
          (badlink-rx `(: line-start "[" (* anything))))
     `((,(rx-to-string link-rx) 0 font-lock-doc-markup-face)
-      (,(rx-to-string badlink-rx) 0 font-lock-warning-face))))
+      (,(rx-to-string badlink-rx) 0 font-lock-warning-face)
+      ("\t" 0 gph-tabs))))
 
 (defvar gph-mode-hook nil
   "Hook for `gph-mode'.  Is run whenever the mode is entered.")
