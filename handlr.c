@@ -71,7 +71,7 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 					*type->type,
 					dirent[i]->d_name,
 					humansize(st.st_size),
-					humantime(&(st.st_mtim.tv_sec)),
+					humantime(&(st.st_mtime)),
 					e, ohost, port);
 			free(file);
 			free(dirent[i]);
