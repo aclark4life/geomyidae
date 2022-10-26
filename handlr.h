@@ -17,20 +17,27 @@
  * sear .... search part of request (»selector\tsearch\r\n«)
  * ohost ... host of geomiydae (See -h in geomyidae(8))
  * chost ... IP of the client sending a request
+ * bhost ... server IP the server received the connection to
  * istls ... set to 1, if TLS was used for thr request
  */
 
 void handledir(int sock, char *path, char *port, char *base, char *args,
-			char *sear, char *ohost, char *chost, int istls);
+			char *sear, char *ohost, char *chost, char *bhost,
+			int istls);
 void handlegph(int sock, char *file, char *port, char *base, char *args,
-			char *sear, char *ohost, char *chost, int istls);
+			char *sear, char *ohost, char *chost, char *bhost,
+			int istls);
 void handlebin(int sock, char *file, char *port, char *base, char *args,
-			char *sear, char *ohost, char *chost, int istls);
+			char *sear, char *ohost, char *chost, char *bhost,
+			int istls);
 void handletxt(int sock, char *file, char *port, char *base, char *args,
-			char *sear, char *ohost, char *chost, int istls);
+			char *sear, char *ohost, char *chost, char *bhost,
+			int istls);
 void handlecgi(int sock, char *file, char *port, char *base, char *args,
-			char *sear, char *ohost, char *chost, int istls);
+			char *sear, char *ohost, char *chost, char *bhost,
+			int istls);
 void handledcgi(int sock, char *file, char *port, char *base, char *args,
-			char *sear, char *ohost, char *chost, int istls);
+			char *sear, char *ohost, char *chost, char *bhost,
+			int istls);
 
 #endif

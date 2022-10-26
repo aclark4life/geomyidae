@@ -133,8 +133,8 @@ logentry(char *host, char *port, char *qry, char *status)
 
 void
 handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
-	      char *port, char *clienth, char *clientp, int nocgi,
-	      int istls)
+	      char *port, char *clienth, char *clientp, char *serverh,
+	      char *serverp, int nocgi, int istls)
 {
 	struct stat dir;
 	char recvc[1025], recvb[1025], path[1025], args[1025], argsc[1025],
@@ -367,7 +367,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 				logentry(clienth, clientp, recvc, "nocgi error");
 		} else {
 			type->f(sock, path, port, base, args, sear, ohost,
-				clienth, istls);
+				clienth, serverh, istls);
 		}
 	} else {
 		/*
@@ -376,7 +376,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		 */
 		if (!pathfallthrough && S_ISDIR(dir.st_mode)) {
 			handledir(sock, path, port, base, args, sear, ohost,
-				clienth, istls);
+				clienth, serverh, istls);
 			if (loglvl & DIRS) {
 				logentry(clienth, clientp, recvc,
 							"dir listing");
@@ -540,9 +540,9 @@ int
 main(int argc, char *argv[])
 {
 	struct addrinfo hints;
-	struct sockaddr_storage clt;
+	struct sockaddr_storage clt, slt;
 	struct linger lingerie;
-	socklen_t cltlen;
+	socklen_t cltlen, sltlen;
 	int sock, dofork = 1, inetf = AF_UNSPEC, usechroot = 0,
 	    nocgi = 0, errno_save, nbindips = 0, i, j,
 	    nlfdret, *lfdret, listfd, maxlfd, istls = 0,
@@ -560,7 +560,7 @@ main(int argc, char *argv[])
 #ifdef ENABLE_TLS
 	     *certfile = NULL, *keyfile = NULL,
 #endif /* ENABLE_TLS */
-	     byte0, recvb[1025];
+	     byte0, recvb[1025], serverh[NI_MAXHOST], serverp[NI_MAXSERV];
 	struct passwd *us = NULL;
 	struct group *gr = NULL;
 #ifdef ENABLE_TLS
@@ -858,6 +858,16 @@ main(int argc, char *argv[])
 			}
 		}
 
+		sltlen = sizeof(slt);
+		serverh[0] = serverp[0] = '\0';
+		if (getsockname(sock, (struct sockaddr *)&slt, &sltlen) == 0) {
+			getnameinfo((struct sockaddr *)&slt, sltlen, serverh,
+					sizeof(serverh), serverp, sizeof(serverp),
+					NI_NUMERICHOST|NI_NUMERICSERV);
+		}
+		if (!strncmp(serverh, "::ffff:", 7))
+			memmove(serverh, serverh+7, strlen(serverh)-6);
+
 		if (getnameinfo((struct sockaddr *)&clt, cltlen, clienth,
 				sizeof(clienth), clientp, sizeof(clientp),
 				NI_NUMERICHOST|NI_NUMERICSERV)) {
@@ -996,7 +1006,8 @@ main(int argc, char *argv[])
 
 			handlerequest(sock, recvb, rlen, base,
 					ohost, sport, clienth,
-					clientp, nocgi, istls);
+					clientp, serverh, serverp,
+					nocgi, istls);
 
 			if (!istls) {
 				/*

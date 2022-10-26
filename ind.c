@@ -531,7 +531,7 @@ reverselookup(char *host)
 
 void
 setcgienviron(char *file, char *path, char *port, char *base, char *args,
-		char *sear, char *ohost, char *chost, int istls)
+		char *sear, char *ohost, char *chost, char *bhost, int istls)
 {
 	/*
 	 * TODO: Clean environment from possible unsafe environment variables.
@@ -569,6 +569,7 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	setenv("SCRIPT_NAME", file, 1);
 	setenv("SERVER_NAME", ohost, 1);
 	setenv("SERVER_PORT", port, 1);
+	setenv("SERVER_LISTEN_NAME", bhost, 1);
 	setenv("SERVER_PROTOCOL", "gopher/1.0", 1);
 	setenv("SERVER_SOFTWARE", "geomyidae", 1);
 
