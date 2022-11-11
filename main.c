@@ -526,7 +526,7 @@ getlistenfd(struct addrinfo *hints, char *bindip, char *port, int *rlfdnum)
 void
 usage(void)
 {
-	dprintf(2, "usage: %s [-46cdens] [-l logfile] "
+	dprintf(2, "usage: %s [-46cdensy] [-l logfile] "
 #ifdef ENABLE_TLS
 		   "[-t keyfile certfile] "
 #endif /* ENABLE_TLS */
@@ -546,7 +546,7 @@ main(int argc, char *argv[])
 	int sock, dofork = 1, inetf = AF_UNSPEC, usechroot = 0,
 	    nocgi = 0, errno_save, nbindips = 0, i, j,
 	    nlfdret, *lfdret, listfd, maxlfd, istls = 0,
-	    dotls = 0,
+	    dotls = 0, dohaproxy = 0, tcpver = -1, haret = 0,
 #ifdef ENABLE_TLS
 	    tlspipe[2], shufbuf[1025],
 	    shuflen, wlen, shufpos,
@@ -556,7 +556,9 @@ main(int argc, char *argv[])
 	fd_set rfd;
 	char *port, *base, clienth[NI_MAXHOST], clientp[NI_MAXSERV],
 	     *user = NULL, *group = NULL, **bindips = NULL,
-	     *ohost = NULL, *sport = NULL, *p,
+	     *ohost = NULL, *sport = NULL, *p;
+	/* Must be as large as recvb, due to scanf restrictions. */
+	char hachost[1025], hashost[1025], hacport[1025], hasport[1025],
 #ifdef ENABLE_TLS
 	     *certfile = NULL, *keyfile = NULL,
 #endif /* ENABLE_TLS */
@@ -574,9 +576,11 @@ main(int argc, char *argv[])
 	ARGBEGIN {
 	case '4':
 		inetf = AF_INET;
+		tcpver = 4;
 		break;
 	case '6':
 		inetf = AF_INET6;
+		tcpver = 6;
 		break;
 	case 'b':
 		base = EARGF(usage());
@@ -629,6 +633,9 @@ main(int argc, char *argv[])
 		break;
 	case 'v':
 		loglvl = atoi(EARGF(usage()));
+		break;
+	case 'y':
+		dohaproxy = 1;
 		break;
 	default:
 		usage();
@@ -942,6 +949,7 @@ main(int argc, char *argv[])
 				return 1;
 			}
 
+read_selector_again:
 			maxrecv = sizeof(recvb) - 1;
 			do {
 #ifdef ENABLE_TLS
@@ -965,6 +973,54 @@ main(int argc, char *argv[])
 					&& --maxrecv > 0);
 			if (rlen <= 0)
 				return 1;
+
+			/*
+			 * HAProxy v1 protocol support.
+			 * TODO: Add other protocol version support.
+			 */
+			if (dohaproxy && !strncmp(recvb, "PROXY TCP", 9)) {
+				/*
+				 * Be careful, we are using scanf.
+				 * TODO: Use some better parsing.
+				 */
+				memset(hachost, 0, sizeof(hachost));
+				memset(hashost, 0, sizeof(hashost));
+				memset(hacport, 0, sizeof(hacport));
+				memset(hasport, 0, sizeof(hasport));
+
+				haret = sscanf(recvb, "PROXY TCP%d %s %s %s %s",
+					&tcpver, hachost, hashost, hacport,
+					hasport);
+				if (haret != 5)
+					return 1;
+
+				/*
+				 * Be careful. Everything could be
+				 * malicious.
+				 */
+				memset(clienth, 0, sizeof(clienth));
+				memmove(clienth, hachost, sizeof(clienth)-1);
+				memset(serverh, 0, sizeof(serverh));
+				memmove(serverh, hashost, sizeof(serverh)-1);
+				memset(clientp, 0, sizeof(clientp));
+				memmove(clientp, hacport, sizeof(clientp)-1);
+				memset(serverp, 0, sizeof(serverp));
+				memmove(serverp, hasport, sizeof(serverp)-1);
+
+				if (!strncmp(serverh, "::ffff:", 7)) {
+					memmove(serverh, serverh+7,
+							strlen(serverh)-6);
+				}
+				if (!strncmp(clienth, "::ffff:", 7)) {
+					memmove(clienth, clienth+7,
+							strlen(clienth)-6);
+				}
+				if (loglvl & CONN) {
+					logentry(clienth, clientp, "-",
+							"haproxy connected");
+				}
+				goto read_selector_again;
+			}
 
 #ifdef ENABLE_TLS
 			if (istls) {

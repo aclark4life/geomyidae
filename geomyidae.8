@@ -18,6 +18,7 @@
 .Op Fl e
 .Op Fl n
 .Op Fl s
+.Op Fl y
 .Op Fl l Ar logfile
 .Op Fl v Ar loglevel
 .Op Fl b Ar base
@@ -113,6 +114,9 @@ Don't perform reverse lookups.
 .
 .It Fl s
 Log using syslog for logging.
+.
+.It Fl y
+Enable HAProxy support.
 .
 .It Fl l Ar logfile
 Specify file where log output is written (no default).
@@ -483,6 +487,11 @@ Phrases_of_the_Ages.txt
 .Pp
 Care should to be exercised to avoid creating miss-Typed entries, unwanted
 recursions, and/or unintended writes in the working directory.
+.Sh HAPROXY SUPPORT
+Geomyidae has
+.Em HAProxy
+support. It can be enabled using the -y parameter.
+.
 .Sh LOG FILES
 The log file (ie. /var/log/gopherd.log) has the following structure:
 .
