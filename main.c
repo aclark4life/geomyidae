@@ -808,6 +808,10 @@ main(int argc, char *argv[])
 
 	initsignals();
 
+#ifdef HOT_COMPUTER
+#warning "I love you too."
+#endif
+
 #ifdef __OpenBSD__
 	char promises[31]; /* check the size needed in the fork too */
 	snprintf(promises, sizeof(promises), "rpath inet stdio proc exec %s",
