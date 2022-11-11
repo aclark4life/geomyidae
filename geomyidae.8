@@ -53,9 +53,8 @@ by default), then run the
 commands.  The resulting executable should be run by root.
 .Ed
 .
-.Ss Basic Installation and Startup:
+.Ss Basic Installation and Startup
 .Bd -literal
-
      $ wget ftp://bitreich.org/releases/geomyidae/geomyidae-$VERSION.tar.lz
      $ lzip -d geomyidae-$VERSION.tar.lz
      $ tar -xvf geomyidae-*.tar
@@ -81,9 +80,9 @@ and
 values if set.  See
 .Ic OPTIONS
 below for specifics.  Launching geomyidae automatically is best done via a UNIX
-run-time (rc.d) script; several sample rc.d scripts are included in the geomyidae
-source archive. Logging in geomyidae can be done through either logfiles
-or syslog.
+run-time (rc.d) script; several sample rc.d scripts are included in the
+geomyidae source archive. Logging in geomyidae can be done through either
+logfiles or syslog.
 .
 .Sh OPTIONS
 geomyidae options and default settings:
@@ -332,7 +331,6 @@ Search Veronica II
 Telnet to SDF Public Access Unix System
 .El
 .Sh DYNAMIC CONTENT (gopher CGI)
-.Bd -filled
 There are two options provided for dynamic content creation: standard CGI (
 .Ic .cgi
 ) and dynamic CGI
@@ -347,15 +345,17 @@ the same user:group running geomyidae.  Consequently, it is best to use
 the -u and -g server options to avoid running as root.
 .Pp
 Both .cgi and .dcgi scripts have the same argument call structure (as seen by geomyidae):
-.Pp
-.D1  executable.[d]cgi $search $arguments $host $port
+.Bd -literal -offset indent
+executable.[d]cgi $search $arguments $host $port
+.Ed
 .Pp
 where
-.Pp
-.D1 search = query string (type 7) or Qo Qc (type 0)
-.D1 arguments = string after Qo ? Qc in the path, the remaining path or Qo Qc
-.D1 host = server's hostname ("localhost" by default)
-.D1 port = server's port ("70" by default)
+.Bd -literal -offset indent
+search = query string (type 7) or "" (type 0)
+arguments = string after "?" in the path, the remaining path or ""
+host = server's hostname ("localhost" by default)
+port = server's port ("70" by default)
+.Ed
 .Pp
 All terms are tab-separated (per gopher protocol) which can cause some
 surprises depending on how a script is written.  See the CGI file (included
@@ -366,32 +366,31 @@ description.
 .Pp
 QUIRK: The original gopher client tried to be too intelligent. It is using
 gopher+ when you request some resource. When "search" is just the value "+",
-"!", "$" or empty, geomyidae will display a gopher+ redirect instead of invoking the
-script. Be careful to design your search script so the user is unlikely to
-enter those values. The designers of gopher+ did not think of classic gopher
-to survive. It survived gopher+.
+"!", "$" or empty, geomyidae will display a gopher+ redirect instead of
+invoking the script. Be careful to design your search script so the user is
+unlikely to enter those values. The designers of gopher+ did not think of
+classic gopher to survive. It survived gopher+.
 .Pp
 Additionally to the above arguments several environment variables are set.
-.Pp
-.Dl GATEWAY_INTERFACE = `CGI/1.1'
-.Dl PATH_INFO = script which is executed
-.Dl PATH_TRANSLATED = absolute path with script which is executed
-.Dl QUERY_STRING = arguments (See above.)
-.Dl SELECTOR = arguments (For backwards compatibility.)
-.Dl REQUEST = arguments (For backwards compatibility.)
-.Dl REMOTE_ADDR = IP of the client
-.Dl REMOTE_HOST = REMOTE_ADDR
-.Dl REQUEST_METHOD = `GET'
-.Dl SCRIPT_NAME = script which is executed
-.Dl SERVER_NAME = server's hostname
-.Dl SERVER_PORT = server's port
-.Dl SERVER_LISTEN_NAME = ip the server received the connection on
-.Dl SERVER_PROTOCOL = `gopher/1.0'
-.Dl SERVER_SOFTWARE = `geomyidae'
-.Dl X_GOPHER_SEARCH = search (See above.)
-.Dl SEARCHREQUEST = search (For backwards compatibility.)
-.Dl HTTPS and GOPHERS = set, if TLS is used
-.Pp
+.Bd -literal -offset indent
+GATEWAY_INTERFACE = `CGI/1.1'
+PATH_INFO = script which is executed
+PATH_TRANSLATED = absolute path with script which is executed
+QUERY_STRING = arguments (See above.)
+SELECTOR = arguments (For backwards compatibility.)
+REQUEST = arguments (For backwards compatibility.)
+REMOTE_ADDR = IP of the client
+REMOTE_HOST = REMOTE_ADDR
+REQUEST_METHOD = `GET'
+SCRIPT_NAME = script which is executed
+SERVER_NAME = server's hostname
+SERVER_PORT = server's port
+SERVER_LISTEN_NAME = ip the server received the connection on
+SERVER_PROTOCOL = `gopher/1.0'
+SERVER_SOFTWARE = `geomyidae'
+X_GOPHER_SEARCH = search (See above.)
+SEARCHREQUEST = search (For backwards compatibility.)
+HTTPS and GOPHERS = set, if TLS is used
 .Ed
 .
 .Ss Some CGI Examples
@@ -529,7 +528,6 @@ ex. - some common status entries:
 => web link redirect (Type h)
 .It Qo dir listing Qc
 => unindexed directory listing
-.Pp
 .It Ic <item path>
 = full path to item served
 .Pp
