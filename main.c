@@ -916,6 +916,7 @@ main(int argc, char *argv[])
 			}
 #endif /* __OpenBSD__ */
 
+read_selector_again:
 			if (recv(sock, &byte0, 1, MSG_PEEK) < 1)
 				return 1;
 
@@ -949,7 +950,6 @@ main(int argc, char *argv[])
 				return 1;
 			}
 
-read_selector_again:
 			maxrecv = sizeof(recvb) - 1;
 			do {
 #ifdef ENABLE_TLS
@@ -979,6 +979,17 @@ read_selector_again:
 			 * TODO: Add other protocol version support.
 			 */
 			if (dohaproxy && !strncmp(recvb, "PROXY TCP", 9)) {
+				/*
+				 * In case more than proxy tcp was read,
+				 * be pepared.
+				 */
+				p = strchr(recvb, '\n');
+				if (p == NULL)
+					return 1;
+				if (p[-1] == '\r')
+					p[-1] = '\0';
+				*p++ = '\0';
+
 				/*
 				 * Be careful, we are using scanf.
 				 * TODO: Use some better parsing.
@@ -1019,7 +1030,13 @@ read_selector_again:
 					logentry(clienth, clientp, "-",
 							"haproxy connected");
 				}
-				goto read_selector_again;
+				printf("clienth = %s, clientp = %s, serverh = %s, serverp = %s\n",
+						clienth, clientp, serverh, serverp);
+
+				/* Realign recvb to new value. */
+				memmove(recvb, p, sizeof(recvb)-(p-recvb));
+				if (strlen(recvb) < 1)
+					goto read_selector_again;
 			}
 
 #ifdef ENABLE_TLS
@@ -1065,8 +1082,9 @@ read_selector_again:
 #endif /* ENABLE_TLS */
 
 			handlerequest(sock, recvb, rlen, base,
-					ohost, sport, clienth,
-					clientp, serverh, serverp,
+					(dohaproxy)? serverh : ohost,
+					(dohaproxy)? serverp : sport,
+					clienth, clientp, serverh, serverp,
 					nocgi, istls);
 
 			if (!istls) {
