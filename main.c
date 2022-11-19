@@ -917,6 +917,9 @@ main(int argc, char *argv[])
 #endif /* __OpenBSD__ */
 
 read_selector_again:
+			rlen = 0;
+			memset(recvb, 0, sizeof(recvb));
+
 			if (recv(sock, &byte0, 1, MSG_PEEK) < 1)
 				return 1;
 
@@ -955,14 +958,14 @@ read_selector_again:
 #ifdef ENABLE_TLS
 				if (istls) {
 					retl = tls_read(tlsclientctx,
-						recvb+rlen, sizeof(recvb)-1-rlen);
+						recvb+rlen, 1);
 					if (retl < 0)
 						fprintf(stderr, "tls_read failed: %s\n", tls_error(tlsclientctx));
 				} else
 #endif /* ENABLE_TLS */
 				{
 					retl = read(sock, recvb+rlen,
-						sizeof(recvb)-1-rlen);
+						1);
 					if (retl < 0)
 						perror("read");
 				}
@@ -979,13 +982,6 @@ read_selector_again:
 			 * TODO: Add other protocol version support.
 			 */
 			if (dohaproxy && !strncmp(recvb, "PROXY TCP", 9)) {
-				/*
-				 * In case more than proxy tcp was read,
-				 * be pepared.
-				 */
-				p = strchr(recvb, '\n');
-				if (p == NULL)
-					return 1;
 				if (p[-1] == '\r')
 					p[-1] = '\0';
 				*p++ = '\0';
@@ -1028,15 +1024,10 @@ read_selector_again:
 				}
 				if (loglvl & CONN) {
 					logentry(clienth, clientp, "-",
-							"haproxy connected");
+							"haproxy connection");
 				}
-				printf("clienth = %s, clientp = %s, serverh = %s, serverp = %s\n",
-						clienth, clientp, serverh, serverp);
 
-				/* Realign recvb to new value. */
-				memmove(recvb, p, sizeof(recvb)-(p-recvb));
-				if (strlen(recvb) < 1)
-					goto read_selector_again;
+				goto read_selector_again;
 			}
 
 #ifdef ENABLE_TLS
