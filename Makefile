@@ -3,7 +3,7 @@
 .POSIX:
 
 NAME = geomyidae
-VERSION = 0.53
+VERSION = 0.54
 
 PREFIX = /usr/local
 BINDIR = ${PREFIX}/bin
