@@ -415,7 +415,7 @@ scanfile(char *fname)
 int
 printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 {
-	char *path, *p, *argbase, buf[PATH_MAX+1], *argp;
+	char *path, *p, *argbase, buf[PATH_MAX+1], *argp, *realbase;
 	int len, blen;
 
 	if (!strcmp(el->e[3], "server")) {
@@ -461,9 +461,11 @@ printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 		snprintf(buf, sizeof(buf), "%s%.*s/%.*s", base, len,
 			path, blen, el->e[2]);
 
+		
 		if ((path = realpath(buf, NULL)) &&
-				!strncmp(base, path, strlen(base))) {
-			p = path + strlen(base);
+				(realbase = realpath(base, NULL)) &&
+				!strncmp(realbase, path, strlen(realbase))) {
+			p = path + strlen(realbase);
 
 			/*
 			 * Do not forget to readd arguments which were
@@ -476,6 +478,7 @@ printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 
 			free(el->e[2]);
 			el->e[2] = argp;
+			free(realbase);
 		}
 		free(path);
 	}
