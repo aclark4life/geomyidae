@@ -50,10 +50,7 @@ uninstall:
 	rm -f "${DESTDIR}${MANDIR}/${NAME}.8"
 
 telemetry:
-	# Adding installation telemetry to be compatible with the
-	# industry.
-	# Bitreich.org does not log anything, so no harm done.
-	printf "/telemetry/geomyidae/installed\n" | nc bitreich.org 70
+	printf "/telemetry/geomyidae/installed\r\n" | nc bitreich.org 70
 
 dist: clean
 	mkdir -p ${NAME}-${VERSION}
