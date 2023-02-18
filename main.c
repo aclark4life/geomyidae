@@ -248,7 +248,10 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		return;
 	}
 
-	if (snprintf(path, sizeof(path), "%s%s", base, recvb) > sizeof(path)) {
+	/* append base to request path (always starting with /), if base is a chroot don't append '/' */
+	if (snprintf(path, sizeof(path), "%s%s",
+	    base[0] == '/' && base[1] == '\0' ? "" : base,
+	    recvb) > sizeof(path)) {
 		if (loglvl & ERRORS) {
 			logentry(clienth, clientp, recvc,
 				"path truncation occurred");
