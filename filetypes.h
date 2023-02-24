@@ -17,6 +17,8 @@ filetype type[] = {
 	{"gph", "1", handlegph},
 	{"cgi", "0", handlecgi},
 	{"dcgi", "1", handledcgi},
+	{"bob", "0", handlecgi},
+	{"dbob", "1", handledcgi},
 	{"bin", "9", handlebin},
 	{"tgz", "9", handlebin},
 	{"gz", "9", handlebin},

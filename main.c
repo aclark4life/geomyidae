@@ -59,7 +59,7 @@ int nlistfds = 0;
 char *argv0;
 char stdbase[] = "/var/gopher";
 char *stdport = "70";
-char *indexf[] = {"/index.gph", "/index.cgi", "/index.dcgi", "/index.bin"};
+char *indexf[] = {"/index.gph", "/index.cgi", "/index.dcgi", "/index.bob", "/index.bin"};
 char *nocgierr = "3Sorry, execution of the token '%s' was requested, but this "
 	    "is disabled in the server configuration.\tErr"
 	    "\tlocalhost\t70\r\n";

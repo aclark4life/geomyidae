@@ -1,0 +1,13 @@
+#!/usr/bin/env eval-bob
+<?geomyidae
+	echo aaaaahhhh
+	a="sober"
+?>
+<?geomyidae printf "BOB is programming "; ?>
+extra $a
+<?geomyidae
+	for i in $(seq 10);
+	do
+		printf "%s\n" "$a";
+	done
+?>

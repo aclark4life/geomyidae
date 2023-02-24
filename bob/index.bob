@@ -1,0 +1,14 @@
+#!/usr/bin/env eval-bob
+[h|BOB is great.|URL:https://www.bob.be|server|port]
+<?geomyidae
+	echo aaaaahhhh
+	a="sober"
+?>
+<?geomyidae printf "BOB is programming "; ?>
+extra $a
+<?geomyidae
+	for i in $(seq 10);
+	do
+		printf "%s\n" "$a";
+	done
+?>

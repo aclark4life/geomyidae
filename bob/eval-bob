@@ -1,0 +1,53 @@
+#!/bin/sh
+#
+# Don't drink and code.
+# Eval BOB!
+#
+# https://www.bob.be/
+#
+# We want to create awareness of people writing code while being drunken.
+# See PHP or Ruby on Rails for how to not do it. You will end up in a
+# life of misery, where you cannot escape and need to keep going until
+# your pension with some ugly language, reinventing what has been done
+# before. Noone will remember you, since you write shit code and the next
+# hype kid replaced your idea with their own hype, rewriting what you
+# already did.
+#
+# Example BOB file:
+#
+#	<?geomyidae echo hello bob ?>
+#
+# See index.bob for an example file.
+#
+
+if [ -z "$1" ];
+then
+	input="/dev/stdin"
+else
+	input="$1"
+fi
+
+{
+	awk -v "bob=1" \
+	'BEGIN {
+		print "cat <<BOBEND" bob ";"
+	}
+	/^#!\// && NR==1 {
+		next;
+	}
+	/<\?geomyidae/ {
+		sub(/<\?geomyidae/, "BOBEND" bob "\n");
+		bob=bob+1;
+	}
+	/\?>/ {
+		sub(/?>/,"\ncat <<BOBEND" bob ";\n");
+	}
+	{
+		print;
+	}
+	END {
+		print "BOBEND" bob
+	}
+	' "${input}" 
+} 
+
