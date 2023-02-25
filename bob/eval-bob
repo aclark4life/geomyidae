@@ -49,5 +49,5 @@ fi
 		print "BOBEND" bob
 	}
 	' "${input}" 
-} 
+} | sh
 
