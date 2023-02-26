@@ -461,7 +461,7 @@ printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 		snprintf(buf, sizeof(buf), "%s%.*s/%.*s", base, len,
 			path, blen, el->e[2]);
 
-		
+
 		if ((path = realpath(buf, NULL)) &&
 				(realbase = realpath(base, NULL)) &&
 				!strncmp(realbase, path, strlen(realbase))) {
