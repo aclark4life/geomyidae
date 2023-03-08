@@ -67,10 +67,8 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 		return;
 	} else {
 		for (i = 0; i < ndir && ret >= 0; i++) {
-			if (dirent[i]->d_name[0] == '.') {
-				free(dirent[i]);
+			if (dirent[i]->d_name[0] == '.')
 				continue;
-			}
 
 			type = gettype(dirent[i]->d_name);
 			file = smprintf("%s%s%s", pa,
@@ -87,8 +85,9 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 					humantime(&(st.st_mtime)),
 					e, ohost, port);
 			free(file);
-			free(dirent[i]);
 		}
+		for (i = 0; i < ndir; i++)
+			free(dirent[i]);
 		free(dirent);
 	}
 	dprintf(sock, ".\r\n");
