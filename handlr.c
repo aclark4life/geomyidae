@@ -21,6 +21,16 @@
 #include "ind.h"
 #include "arg.h"
 
+char *
+make_base_path(char *path, char *base)
+{
+	if (!(base[0] == '/' && base[1] == '\0') &&
+	    strlen(path) > strlen(base))
+		return path + strlen(base);
+	else
+		return path;
+}
+
 void
 handledir(int sock, char *path, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, char *bhost, int istls)
@@ -37,15 +47,16 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 
 	pa = xstrdup(path);
 	e = pa + strlen(pa) - 1;
-	if (e[0] == '/')
+	if (e > pa && e[0] == '/')
 		*e = '\0';
 
 	par = xstrdup(pa);
-	b = strrchr(par + strlen(base), '/');
+
+	b = strrchr(make_base_path(par, base), '/');
 	if (b != NULL) {
 		*b = '\0';
 		dprintf(sock, "1..\t%s\t%s\t%s\r\n",
-			par + strlen(base), ohost, port);
+			make_base_path(par, base), ohost, port);
 	}
 	free(par);
 
@@ -62,11 +73,12 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 			}
 
 			type = gettype(dirent[i]->d_name);
-			file = smprintf("%s/%s", pa,
+			file = smprintf("%s%s%s", pa,
+					pa[0] == '/' && pa[1] == '\0' ? "" : "/",
 					dirent[i]->d_name);
 			if (stat(file, &st) >= 0 && S_ISDIR(st.st_mode))
 				type = gettype("index.gph");
-			e = file + strlen(base);
+			e = make_base_path(file, base);
 			ret = dprintf(sock,
 					"%c%-50.50s %10s %16s\t%s\t%s\t%s\r\n",
 					*type->type,
