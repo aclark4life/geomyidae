@@ -1061,7 +1061,7 @@ read_selector_again:
 								return 1;
 							}
 						}
-					} while(shuflen > 0);
+					} while (shuflen > 0);
 
 					tls_close(tlsclientctx);
 					tls_free(tlsclientctx);

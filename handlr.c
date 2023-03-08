@@ -232,7 +232,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 	while (dup2(sock, 2) < 0 && errno == EINTR);
 	switch (fork()) {
 	case 0:
-		while(dup2(outpipe[1], 1) < 0 && errno == EINTR);
+		while (dup2(outpipe[1], 1) < 0 && errno == EINTR);
 		close(outpipe[0]);
 		if (path != NULL) {
 			if (chdir(path) < 0)
@@ -252,7 +252,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		perror("fork");
 		break;
 	default:
-		while(dup2(sock, 1) < 0 && errno == EINTR);
+		while (dup2(sock, 1) < 0 && errno == EINTR);
 		close(outpipe[1]);
 
 		if (!(fp = fdopen(outpipe[0], "r"))) {

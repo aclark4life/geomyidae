@@ -394,7 +394,7 @@ scanfile(char *fname)
 		if (ln[n - 1] == '\n')
 			ln[--n] = '\0';
 		el = getadv(ln);
-		if(el == NULL)
+		if (el == NULL)
 			continue;
 
 		addindexs(ret, el);
@@ -460,7 +460,6 @@ printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 
 		snprintf(buf, sizeof(buf), "%s%.*s/%.*s", base, len,
 			path, blen, el->e[2]);
-
 
 		if ((path = realpath(buf, NULL)) &&
 				(realbase = realpath(base, NULL)) &&
