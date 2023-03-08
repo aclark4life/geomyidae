@@ -108,13 +108,14 @@ handlegph(int sock, char *file, char *port, char *base, char *args,
 
 	act = scanfile(file);
 	if (act != NULL) {
-		for (i = 0; i < act->num && ret >= 0; i++) {
+		for (i = 0; i < act->num && ret >= 0; i++)
 			ret = printelem(sock, act->n[i], file, base, ohost, port);
+		dprintf(sock, ".\r\n");
+
+		for (i = 0; i < act->num; i++) {
 			freeelem(act->n[i]);
 			act->n[i] = NULL;
 		}
-		dprintf(sock, ".\r\n");
-
 		freeindex(act);
 	}
 }
