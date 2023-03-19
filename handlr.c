@@ -245,6 +245,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 
 		if (!(fp = fdopen(outpipe[0], "r"))) {
 			perror("fdopen");
+			close(outpipe[0]);
 			break;
 		}
 
