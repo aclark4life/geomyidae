@@ -116,14 +116,14 @@ xsplice(int fd, int sock)
 			BLOCK_SIZE, SPLICE_F_MOVE | SPLICE_F_MORE);
 
 		if (nread <= 0) {
-			ret = nread < 0 ? 1 : 0;
+			ret = nread < 0 ? -1 : 0;
 			goto out;
 		}
 
 		nwritten  = splice(pipefd[0], NULL, sock, NULL, BLOCK_SIZE,
 				SPLICE_F_MOVE | SPLICE_F_MORE);
 		if (nwritten < 0) {
-			ret = 1;
+			ret = -1;
 			goto out;
 		}
 	} while (nwritten > 0);
