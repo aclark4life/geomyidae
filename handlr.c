@@ -21,16 +21,6 @@
 #include "ind.h"
 #include "arg.h"
 
-char *
-make_base_path(char *path, char *base)
-{
-	if (!(base[0] == '/' && base[1] == '\0') &&
-	    strlen(path) > strlen(base))
-		return path + strlen(base);
-	else
-		return path;
-}
-
 void
 handledir(int sock, char *path, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, char *bhost, int istls)
@@ -52,11 +42,11 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 
 	par = xstrdup(pa);
 
-	b = strrchr(make_base_path(par, base), '/');
+	b = strrchr(makebasepath(par, base), '/');
 	if (b != NULL) {
 		*b = '\0';
 		dprintf(sock, "1..\t%s\t%s\t%s\r\n",
-			make_base_path(par, base), ohost, port);
+			makebasepath(par, base), ohost, port);
 	}
 	free(par);
 
@@ -76,7 +66,7 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 					dirent[i]->d_name);
 			if (stat(file, &st) >= 0 && S_ISDIR(st.st_mode))
 				type = gettype("index.gph");
-			e = make_base_path(file, base);
+			e = makebasepath(file, base);
 			ret = dprintf(sock,
 					"%c%-50.50s %10s %16s\t%s\t%s\t%s\r\n",
 					*type->type,

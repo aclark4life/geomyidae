@@ -52,6 +52,7 @@ void setcgienviron(char *file, char *path, char *port, char *base,
 		char *bhost, int istls);
 char *humansize(off_t n);
 char *humantime(const time_t *clock);
+char *makebasepath(char *path, char *base);
 
 #endif
 

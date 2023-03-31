@@ -622,3 +622,14 @@ humantime(const time_t *clock)
 	return buf;
 }
 
+char *
+makebasepath(char *path, char *base)
+{
+	if (!(base[0] == '/' && base[1] == '\0') &&
+			strlen(path) > strlen(base)) {
+		return path + strlen(base);
+	} else {
+		return path;
+	}
+}
+
