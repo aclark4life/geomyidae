@@ -149,9 +149,7 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 		path = NULL;
 	}
 
-	p = strrchr(file, '/');
-	if (p == NULL)
-		p = file;
+	p = makebasepath(file, base);
 
 	if (sear == NULL)
 		sear = "";
@@ -209,9 +207,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		path = NULL;
 	}
 
-	p = strrchr(file, '/');
-	if (p == NULL)
-		p = file;
+	p = makebasepath(file, base);
 
 	if (sear == NULL)
 		sear = "";
