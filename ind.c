@@ -572,7 +572,11 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	setenv("SERVER_NAME", ohost, 1);
 	setenv("SERVER_PORT", port, 1);
 	setenv("SERVER_LISTEN_NAME", bhost, 1);
-	setenv("SERVER_PROTOCOL", "gopher/1.0", 1);
+	if (istls) {
+		setenv("SERVER_PROTOCOL", "gophers/1.0", 1);
+	} else {
+		setenv("SERVER_PROTOCOL", "gopher/1.0", 1);
+	}
 	setenv("SERVER_SOFTWARE", "geomyidae", 1);
 
 	setenv("X_GOPHER_SEARCH", sear, 1);
