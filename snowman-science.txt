@@ -1,0 +1,28 @@
+# Snowman Science
+
+Why is it scientific to use snowmen for error messages in quality
+assurance?
+
+Let us draw one:
+
+y=\frac{\sin x}{x}-1\left\{-0.965\ge x,x\ge0.965\right\}
+x^{2}+\left(y-1\right)^{2}=\left(1.5\right)^{2}
+x^{2}+\left(y-3.5\right)^{2}=1
+x^{2}+\left(y-1\right)^{2}\le\frac{1}{16}
+x^{2}+\left(y-1.75\right)^{2}\le\frac{1}{16}
+x^{2}+\left(y-0.25\right)^{2}\le\frac{1}{16}
+\left(x+0.375\right)^{2}+\left(y-3.875\right)^{2}\le\frac{1}{36}
+\left(x-0.375\right)^{2}+\left(y-3.875\right)^{2}\le\frac{1}{36}
+\left\{0\le x\le0.75:-\frac{1}{2}x+3.625\right\}\ge y\ge-\frac{1}{6}x+3.375
+y=-\frac{1}{2}x+3.625\left\{0\le x\le0.75\right\}
+y=-\frac{1}{6}x+3.375\left\{0\le x\le0.75\right\}
+y=\sqrt{1+x^{2}}+1.875\left\{-0.375\le x\le0.375\right\}
+y=\frac{\left|x\right|}{1.75}+0.75\left\{-2.375\le x\le-1.396,1.396\le x\le2.375\right\}
+
+(Source: https://www.desmos.com/calculator/hsepj6fcal )
+
+Now that we have proven that snowmen are pure science, no further
+evidence is needed.
+
+Thank you for your patience.
+
