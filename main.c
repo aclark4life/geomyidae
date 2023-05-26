@@ -551,7 +551,7 @@ main(int argc, char *argv[])
 	    nlfdret, *lfdret, listfd, maxlfd, istls = 0,
 	    dotls = 0, dohaproxy = 0, tcpver = -1, haret = 0,
 #ifdef ENABLE_TLS
-	    tlspipe[2], shufbuf[1025],
+	    tlssocks[2], shufbuf[1025],
 	    shuflen, wlen, shufpos,
 #endif /* ENABLE_TLS */
 	    maxrecv, retl,
@@ -1035,23 +1035,23 @@ read_selector_again:
 
 #ifdef ENABLE_TLS
 			if (istls) {
-				if (pipe(tlspipe) < 0) {
-					perror("tls_pipe");
+				if (socketpair(AF_LOCAL, SOCK_STREAM, 0, tlssocks) < 0) {
+					perror("tls_socketpair");
 					return 1;
 				}
 
 				switch(fork()) {
 				case 0:
-					sock = tlspipe[1];
-					close(tlspipe[0]);
+					sock = tlssocks[1];
+					close(tlssocks[0]);
 					break;
 				case -1:
 					perror("fork");
 					return 1;
 				default:
-					close(tlspipe[1]);
+					close(tlssocks[1]);
 					do {
-						shuflen = read(tlspipe[0], shufbuf, sizeof(shufbuf)-1);
+						shuflen = read(tlssocks[0], shufbuf, sizeof(shufbuf)-1);
 						if (shuflen == -1 && errno == EINTR)
 							continue;
 						for (shufpos = 0; shufpos < shuflen; shufpos += wlen) {
@@ -1065,7 +1065,7 @@ read_selector_again:
 
 					tls_close(tlsclientctx);
 					tls_free(tlsclientctx);
-					close(tlspipe[0]);
+					close(tlssocks[0]);
 
 					waitforpendingbytes(sock);
 					shutdown(sock, SHUT_RDWR);

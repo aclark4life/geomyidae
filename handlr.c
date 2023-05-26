@@ -192,10 +192,10 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 	char *p, *path, *ln = NULL;
 	size_t linesiz = 0;
 	ssize_t n;
-	int outpipe[2], ret = 0;
+	int outsocks[2], ret = 0;
 	Elems *el;
 
-	if (pipe(outpipe) < 0)
+	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, outsocks) < 0)
 		return;
 
 	path = xstrdup(file);
@@ -218,8 +218,8 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 	while (dup2(sock, 2) < 0 && errno == EINTR);
 	switch (fork()) {
 	case 0:
-		while (dup2(outpipe[1], 1) < 0 && errno == EINTR);
-		close(outpipe[0]);
+		while (dup2(outsocks[1], 1) < 0 && errno == EINTR);
+		close(outsocks[0]);
 		if (path != NULL) {
 			if (chdir(path) < 0)
 				break;
@@ -239,11 +239,11 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		break;
 	default:
 		while (dup2(sock, 1) < 0 && errno == EINTR);
-		close(outpipe[1]);
+		close(outsocks[1]);
 
-		if (!(fp = fdopen(outpipe[0], "r"))) {
+		if (!(fp = fdopen(outsocks[0], "r"))) {
 			perror("fdopen");
-			close(outpipe[0]);
+			close(outsocks[0]);
 			break;
 		}
 
