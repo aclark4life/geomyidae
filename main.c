@@ -552,7 +552,7 @@ main(int argc, char *argv[])
 	    dotls = 0, dohaproxy = 0, tcpver = -1, haret = 0,
 #ifdef ENABLE_TLS
 	    tlssocks[2], shufbuf[1025],
-	    shuflen, wlen, shufpos,
+	    shuflen, wlen, shufpos, tlsclientreader,
 #endif /* ENABLE_TLS */
 	    maxrecv, retl,
 	    rlen = 0;
@@ -1049,27 +1049,59 @@ read_selector_again:
 					perror("fork");
 					return 1;
 				default:
-					close(tlssocks[1]);
+					tlsclientreader = 1;
+					switch(fork()) {
+					case 0:
+						break;
+					case -1:
+						perror("fork");
+						return 1;
+					default:
+						tlsclientreader = 0;
+					}
+
+					close(tlssocks[tlsclientreader? 1 : 0]);
 					do {
-						shuflen = read(tlssocks[0], shufbuf, sizeof(shufbuf)-1);
+						if (tlsclientreader) {
+							shuflen = read(tlssocks[0], shufbuf, sizeof(shufbuf)-1);
+						} else {
+							shuflen = tls_read(tlsclientctx, shufbuf, sizeof(shufbuf)-1);
+						}
 						if (shuflen == -1 && errno == EINTR)
 							continue;
 						for (shufpos = 0; shufpos < shuflen; shufpos += wlen) {
-							wlen = tls_write(tlsclientctx, shufbuf+shufpos, shuflen-shufpos);
-							if (wlen < 0) {
-								fprintf(stderr, "tls_write failed: %s\n", tls_error(tlsclientctx));
-								return 1;
+							if (tlsclientreader) {
+								wlen = tls_write(tlsclientctx, shufbuf+shufpos, shuflen-shufpos);
+								if (wlen < 0) {
+									fprintf(stderr, "tls_write failed: %s\n", tls_error(tlsclientctx));
+									return 1;
+								}
+							} else {
+								wlen = write(tlssocks[1], shufbuf+shufpos, shuflen-shufpos);
+								if (wlen < 0) {
+									perror("write");
+									return 1;
+								}
 							}
 						}
 					} while (shuflen > 0);
 
-					tls_close(tlsclientctx);
-					tls_free(tlsclientctx);
-					close(tlssocks[0]);
+					if (tlsclientreader) {
+						tls_close(tlsclientctx);
+						tls_free(tlsclientctx);
+					}
 
-					waitforpendingbytes(sock);
-					shutdown(sock, SHUT_RDWR);
-					close(sock);
+					close(tlssocks[tlsclientreader? 0 : 1]);
+
+					if (tlsclientreader) {
+						/*
+						 * Only one process needs
+						 * to do this.
+						 */
+						waitforpendingbytes(sock);
+						shutdown(sock, SHUT_RDWR);
+						close(sock);
+					}
 					return 0;
 				}
 			}
