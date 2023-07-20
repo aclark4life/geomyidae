@@ -3,9 +3,11 @@ tcomment (old style comment)
 [1|R-36|/|server|port]
 [0|file - comment|/file.txt|server|port]
 [h|http://www.heise.de|URL:http://www.heise.de|server|port]
-[0|some \| escape and [ special characters ] test|error|server|port]
+[0|some \| escape and [ special characters ] test|Err|server|port]
 [9|binary data file|/file.dat|server|port]
 [9|unclosed entry|/file.dat|server|port
+[9|some relative path with args|./legacy/caps.txt?key=value|server|port]
+[9|some other relative path|legacy/caps.txt|server|port]
 [|empty type||server|port]
 [|Escape something, [| is skipped.
 some	invalid line

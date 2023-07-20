@@ -17,6 +17,7 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <libgen.h>
 
 #include "ind.h"
 #include "arg.h"
@@ -25,7 +26,7 @@ void
 handledir(int sock, char *path, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, char *bhost, int istls)
 {
-	char *pa, *file, *e, *par, *b;
+	char *pa, *file, *e, *par;
 	struct dirent **dirent;
 	int ndir, i, ret = 0;
 	struct stat st;
@@ -35,22 +36,25 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 	USED(sear);
 	USED(bhost);
 
+	printf("handledir:\n");
+	printf("sock = %d; path = %s; port = %s; base = %s; args = %s;\n",
+			sock, path, port, base, args);
+	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
+			sear, ohost, chost, bhost, istls);
+
 	pa = xstrdup(path);
-	e = pa + strlen(pa) - 1;
-	if (e > pa && e[0] == '/')
+
+	/* Is there any directory below the request? */
+	if (strlen(pa+strlen(base)) > 1) {
+		par = xstrdup(pa+strlen(base));
+		e = strrchr(par, '/');
 		*e = '\0';
-
-	par = xstrdup(pa);
-
-	b = strrchr(makebasepath(par, base), '/');
-	if (b != NULL) {
-		*b = '\0';
 		dprintf(sock, "1..\t%s\t%s\t%s\r\n",
-			makebasepath(par, base), ohost, port);
+			par, ohost, port);
+		free(par);
 	}
-	free(par);
 
-	ndir = scandir(pa[0] ? pa : ".", &dirent, 0, alphasort);
+	ndir = scandir(pa, &dirent, 0, alphasort);
 	if (ndir < 0) {
 		perror("scandir");
 		free(pa);
@@ -61,19 +65,21 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 				continue;
 
 			type = gettype(dirent[i]->d_name);
-			file = smprintf("%s%s%s", pa,
-					pa[0] == '/' && pa[1] == '\0' ? "" : "/",
+
+			file = smprintf("%s%s%s",
+					pa,
+					pa[strlen(pa)-1] == '/'? "" : "/",
 					dirent[i]->d_name);
+			printf("handledir: smprintf file = %s\n", file);
 			if (stat(file, &st) >= 0 && S_ISDIR(st.st_mode))
 				type = gettype("index.gph");
-			e = makebasepath(file, base);
 			ret = dprintf(sock,
 					"%c%-50.50s %10s %16s\t%s\t%s\t%s\r\n",
 					*type->type,
 					dirent[i]->d_name,
 					humansize(st.st_size),
 					humantime(&(st.st_mtime)),
-					e, ohost, port);
+					file + strlen(base), ohost, port);
 			free(file);
 		}
 		for (i = 0; i < ndir; i++)
@@ -89,24 +95,30 @@ void
 handlegph(int sock, char *file, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, char *bhost, int istls)
 {
-	Indexs *act;
+	gphindex *act;
 	int i, ret = 0;
 
 	USED(args);
 	USED(sear);
 	USED(bhost);
 
-	act = scanfile(file);
+	printf("handlegph:\n");
+	printf("sock = %d; file = %s; port = %s; base = %s; args = %s;\n",
+			sock, file, port, base, args);
+	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
+			sear, ohost, chost, bhost, istls);
+
+	act = gph_scanfile(file);
 	if (act != NULL) {
 		for (i = 0; i < act->num && ret >= 0; i++)
-			ret = printelem(sock, act->n[i], file, base, ohost, port);
+			ret = gph_printelem(sock, act->n[i], file, base, ohost, port);
 		dprintf(sock, ".\r\n");
 
 		for (i = 0; i < act->num; i++) {
-			freeelem(act->n[i]);
+			gph_freeelem(act->n[i]);
 			act->n[i] = NULL;
 		}
-		freeindex(act);
+		gph_freeindex(act);
 	}
 }
 
@@ -135,21 +147,22 @@ void
 handlecgi(int sock, char *file, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, char *bhost, int istls)
 {
-	char *p, *path;
+	char *script, *path;
 
 	USED(base);
 	USED(port);
 
-	path = xstrdup(file);
-	p = strrchr(path, '/');
-	if (p != NULL)
-		p[1] = '\0';
-	else {
-		free(path);
-		path = NULL;
-	}
+	printf("handlecgi:\n");
+	printf("sock = %d; file = %s; port = %s; base = %s; args = %s;\n",
+			sock, file, port, base, args);
+	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
+			sear, ohost, chost, bhost, istls);
 
-	p = makebasepath(file, base);
+	path = xstrdup(file);
+	path = dirname(path);
+	script = path + strlen(path) + 1;
+	printf("path = %s\n", path);
+	printf("script = %s\n", script);
 
 	if (sear == NULL)
 		sear = "";
@@ -166,10 +179,10 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 				break;
 		}
 
-		setcgienviron(p, file, port, base, args, sear, ohost, chost,
+		setcgienviron(script, file, port, base, args, sear, ohost, chost,
 				bhost, istls);
 
-		if (execl(file, p, sear, args, ohost, port,
+		if (execl(file, script, sear, args, ohost, port,
 				(char *)NULL) == -1) {
 			perror("execl");
 			_exit(1);
@@ -189,25 +202,24 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, char *bhost, int istls)
 {
 	FILE *fp;
-	char *p, *path, *ln = NULL;
+	char *script, *path, *ln = NULL;
 	size_t linesiz = 0;
 	ssize_t n;
 	int outsocks[2], ret = 0;
-	Elems *el;
+	gphelem *el;
+
+	printf("handledcgi:\n");
+	printf("sock = %d; file = %s; port = %s; base = %s; args = %s;\n",
+			sock, file, port, base, args);
+	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
+			sear, ohost, chost, bhost, istls);
 
 	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, outsocks) < 0)
 		return;
 
 	path = xstrdup(file);
-	p = strrchr(path, '/');
-	if (p != NULL)
-		p[1] = '\0';
-	else {
-		free(path);
-		path = NULL;
-	}
-
-	p = makebasepath(file, base);
+	path = dirname(path);
+	script = path + strlen(path) + 1;
 
 	if (sear == NULL)
 		sear = "";
@@ -225,10 +237,10 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 				break;
 		}
 
-		setcgienviron(p, file, port, base, args, sear, ohost, chost,
+		setcgienviron(script, file, port, base, args, sear, ohost, chost,
 				bhost, istls);
 
-		if (execl(file, p, sear, args, ohost, port,
+		if (execl(file, script, sear, args, ohost, port,
 				(char *)NULL) == -1) {
 			perror("execl");
 			_exit(1);
@@ -251,21 +263,21 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 			if (ln[n - 1] == '\n')
 				ln[--n] = '\0';
 
-			el = getadv(ln);
+			el = gph_getadv(ln);
 			if (el == NULL)
 				continue;
 
-			ret = printelem(sock, el, file, base, ohost, port);
-			freeelem(el);
+			ret = gph_printelem(sock, el, file, base, ohost, port);
+			gph_freeelem(el);
 		}
 		if (ferror(fp))
 			perror("getline");
 		dprintf(sock, ".\r\n");
 
 		free(ln);
-		free(path);
 		fclose(fp);
 		wait(NULL);
+		free(path);
 		break;
 	}
 }

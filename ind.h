@@ -10,18 +10,6 @@
 
 extern int glfd;
 
-typedef struct Elems Elems;
-struct Elems {
-	char **e;
-	int num;
-};
-
-typedef struct Indexs Indexs;
-struct Indexs {
-	Elems **n;
-	int num;
-};
-
 typedef struct filetype filetype;
 struct filetype {
         char *end;
@@ -31,20 +19,34 @@ struct filetype {
 };
 
 filetype *gettype(char *filename);
+
+typedef struct gphelem gphelem;
+struct gphelem {
+	char **e;
+	int num;
+};
+
+typedef struct gphindex gphindex;
+struct gphindex {
+	gphelem **n;
+	int num;
+};
+
+gphindex *gph_scanfile(char *fname);
+gphelem *gph_getadv(char *str);
+int gph_printelem(int fd, gphelem *el, char *file, char *base, char *addr, char *port);
+void gph_addindex(gphindex *idx, gphelem *el);
+void gph_addelem(gphelem *e, char *s);
+void gph_freeindex(gphindex *i);
+void gph_freeelem(gphelem *e);
+
 void *xcalloc(size_t, size_t);
 void *xmalloc(size_t);
 void *xrealloc(void *, size_t);
 char *xstrdup(const char *str);
 int xsendfile(int, int);
-Indexs *scanfile(char *fname);
-Elems *getadv(char *str);
 int pendingbytes(int sock);
 void waitforpendingbytes(int sock);
-int printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port);
-void addindexs(Indexs *idx, Elems *el);
-void addelem(Elems *e, char *s);
-void freeindex(Indexs *i);
-void freeelem(Elems *e);
 char *smprintf(char *fmt, ...);
 char *reverselookup(char *host);
 void setcgienviron(char *file, char *path, char *port, char *base,
@@ -52,7 +54,6 @@ void setcgienviron(char *file, char *path, char *port, char *base,
 		char *bhost, int istls);
 char *humansize(off_t n);
 char *humantime(const time_t *clock);
-char *makebasepath(char *path, char *base);
 
 #endif
 

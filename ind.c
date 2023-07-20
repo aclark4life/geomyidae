@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <limits.h>
+#include <errno.h>
 
 #define PAGE_SHIFT 12
 #define PAGE_SIZE (1UL << PAGE_SHIFT)
@@ -258,7 +259,7 @@ gettype(char *filename)
 }
 
 void
-freeelem(Elems *e)
+gph_freeelem(gphelem *e)
 {
 	if (e != NULL) {
 		if (e->e != NULL) {
@@ -273,12 +274,12 @@ freeelem(Elems *e)
 }
 
 void
-freeindex(Indexs *i)
+gph_freeindex(gphindex *i)
 {
 	if (i != NULL) {
 		if (i->n != NULL) {
 			for (;i->num > 0; i->num--)
-				freeelem(i->n[i->num - 1]);
+				gph_freeelem(i->n[i->num - 1]);
 			free(i->n);
 		}
 		free(i);
@@ -288,7 +289,7 @@ freeindex(Indexs *i)
 }
 
 void
-addelem(Elems *e, char *s)
+gph_addelem(gphelem *e, char *s)
 {
 	e->num++;
 	e->e = xrealloc(e->e, sizeof(char *) * e->num);
@@ -297,23 +298,23 @@ addelem(Elems *e, char *s)
 	return;
 }
 
-Elems *
-getadv(char *str)
+gphelem *
+gph_getadv(char *str)
 {
 	char *b, *e, *o, *bo;
-	Elems *ret;
+	gphelem *ret;
 
-	ret = xcalloc(1, sizeof(Elems));
+	ret = xcalloc(1, sizeof(gphelem));
 
 	if (strchr(str, '\t')) {
-		addelem(ret, "i");
-		addelem(ret, "Happy helping ☃ here: You tried to "
+		gph_addelem(ret, "i");
+		gph_addelem(ret, "Happy helping ☃ here: You tried to "
 			"output a spurious TAB character. This will "
 			"break gopher. Please review your scripts. "
 			"Have a nice day!");
-		addelem(ret, "Err");
-		addelem(ret, "server");
-		addelem(ret, "port");
+		gph_addelem(ret, "Err");
+		gph_addelem(ret, "server");
+		gph_addelem(ret, "port");
 
 		return ret;
 	}
@@ -331,7 +332,7 @@ getadv(char *str)
 			}
 			*e = '\0';
 			e++;
-			addelem(ret, b);
+			gph_addelem(ret, b);
 			b = e;
 			bo = b;
 		}
@@ -339,7 +340,7 @@ getadv(char *str)
 		e = strchr(b, ']');
 		if (e != NULL) {
 			*e = '\0';
-			addelem(ret, b);
+			gph_addelem(ret, b);
 		}
 		free(o);
 
@@ -349,55 +350,55 @@ getadv(char *str)
 		}
 
 		/* Invalid entry: Give back the whole line. */
-		freeelem(ret);
-		ret = xcalloc(1, sizeof(Elems));
+		gph_freeelem(ret);
+		ret = xcalloc(1, sizeof(gphelem));
 	}
 
-	addelem(ret, "i");
+	gph_addelem(ret, "i");
 	/* Jump over escape sequence. */
 	if (str[0] == '[' && str[1] == '|')
 		str += 2;
-	addelem(ret, str);
-	addelem(ret, "Err");
-	addelem(ret, "server");
-	addelem(ret, "port");
+	gph_addelem(ret, str);
+	gph_addelem(ret, "Err");
+	gph_addelem(ret, "server");
+	gph_addelem(ret, "port");
 
 	return ret;
 }
 
 void
-addindexs(Indexs *idx, Elems *el)
+gph_addindex(gphindex *idx, gphelem *el)
 {
 	idx->num++;
-	idx->n = xrealloc(idx->n, sizeof(Elems) * idx->num);
+	idx->n = xrealloc(idx->n, sizeof(gphelem *) * idx->num);
 	idx->n[idx->num - 1] = el;
 
 	return;
 }
 
-Indexs *
-scanfile(char *fname)
+gphindex *
+gph_scanfile(char *fname)
 {
 	char *ln = NULL;
 	size_t linesiz = 0;
 	ssize_t n;
 	FILE *fp;
-	Indexs *ret;
-	Elems *el;
+	gphindex *ret;
+	gphelem *el;
 
 	if (!(fp = fopen(fname, "r")))
 		return NULL;
 
-	ret = xcalloc(1, sizeof(Indexs));
+	ret = xcalloc(1, sizeof(gphindex));
 
 	while ((n = getline(&ln, &linesiz, fp)) > 0) {
 		if (ln[n - 1] == '\n')
 			ln[--n] = '\0';
-		el = getadv(ln);
+		el = gph_getadv(ln);
 		if (el == NULL)
 			continue;
 
-		addindexs(ret, el);
+		gph_addindex(ret, el);
 	}
 	if (ferror(fp))
 		perror("getline");
@@ -413,9 +414,9 @@ scanfile(char *fname)
 }
 
 int
-printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
+gph_printelem(int fd, gphelem *el, char *file, char *base, char *addr, char *port)
 {
-	char *path, *p, *argbase, buf[PATH_MAX+1], *argp, *realbase;
+	char *path, *p, *argbase, buf[PATH_MAX+1], *argp, *realbase, *rpath;
 	int len, blen;
 
 	if (!strcmp(el->e[3], "server")) {
@@ -432,10 +433,6 @@ printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 	 * some URL and ignore various types that have different semantics,
 	 * do not point to some file or directory.
 	 */
-	/*
-	 * FUTURE: If ever special requests with no beginning '/' are used in
-	 * geomyidae, this is the place to control this.
-	 */
 	if ((el->e[2][0] != '\0'
 	    && el->e[2][0] != '/' /* Absolute Request. */
 	    && el->e[0][0] != 'i' /* Informational item. */
@@ -446,45 +443,50 @@ printelem(int fd, Elems *el, char *file, char *base, char *addr, char *port)
 	    && el->e[0][0] != 'T') && /* tn3270 */
 	    !(el->e[0][0] == 'h' && !strncmp(el->e[2], "URL:", 4))) {
 		path = file + strlen(base);
-		if ((p = strrchr(path, '/')))
-			len = p - path;
-		else
+
+		/* Strip off original gph file name. */
+		if ((p = strrchr(path, '/'))) {
+			len = strlen(path) - strlen(basename(path));
+		} else {
 			len = strlen(path);
+		}
 
 		/* Strip off arguments for realpath. */
 		argbase = strchr(el->e[2], '?');
-		if (argbase != NULL)
+		if (argbase != NULL) {
 			blen = argbase - el->e[2];
-		else
+		} else {
 			blen = strlen(el->e[2]);
+		}
 
-		snprintf(buf, sizeof(buf), "%s%.*s/%.*s", base, len,
+		/*
+		 * Print everything together. Realpath will resolve it.
+		 */
+		snprintf(buf, sizeof(buf), "%s%.*s%.*s", base, len,
 			path, blen, el->e[2]);
 
-		if ((path = realpath(buf, NULL)) &&
-				(realbase = realpath(base, NULL)) &&
-				!strncmp(realbase, path, strlen(realbase))) {
-			p = path + strlen(realbase);
+		if ((rpath = realpath(buf, NULL)) &&
+				(realbase = realpath(*base? base : "/", NULL)) &&
+				!strncmp(realbase, rpath, strlen(realbase))) {
+			p = rpath + (*base? strlen(realbase) : 0);
 
 			/*
-			 * Do not forget to readd arguments which were
+			 * Do not forget to re-add arguments which were
 			 * stripped off.
 			 */
-			if (argbase != NULL)
-				argp = smprintf("%s%s", p[0]? p : "/", argbase);
-			else
-				argp = xstrdup(p[0]? p : "/");
+			argp = smprintf("%s%s", *p? p : "/", argbase? argbase : "");
 
 			free(el->e[2]);
 			el->e[2] = argp;
 			free(realbase);
 		}
-		free(path);
+		if (rpath != NULL)
+			free(rpath);
 	}
 
 	if (dprintf(fd, "%.1s%s\t%s\t%s\t%s\r\n", el->e[0], el->e[1], el->e[2],
 			el->e[3], el->e[4]) < 0) {
-		perror("printelem: dprintf");
+		perror("printgphelem: dprintf");
 		return -1;
 	}
 	return 0;
@@ -545,19 +547,26 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
 	/* TODO: Separate, if run like rest.dcgi. */
 	setenv("PATH_INFO", file, 1);
+	printf("PATH_INFO = %s\n", file);
 	setenv("PATH_TRANSLATED", path, 1);
+	printf("PATH_TRANSLATED = %s\n", path);
 
 	setenv("QUERY_STRING", args, 1);
+	printf("QUERY_STRING = %s\n", args);
 	/* legacy compatibility */
 	setenv("SELECTOR", args, 1);
+	printf("SELECTOR = %s\n", args);
 	setenv("REQUEST", args, 1);
+	printf("REQUEST = %s\n", args);
 
 	setenv("REMOTE_ADDR", chost, 1);
+	printf("REMOTE_ADDR = %s\n", chost);
 	/*
 	 * Don't do a reverse lookup on every call. Only do when needed, in
 	 * the script. The RFC allows us to set the IP to the value.
 	 */
 	setenv("REMOTE_HOST", chost, 1);
+	printf("REMOTE_HOST = %s\n", chost);
 	/* Please do not implement identd here. */
 	unsetenv("REMOTE_IDENT");
 	unsetenv("REMOTE_USER");
@@ -569,9 +578,12 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	 */
 	setenv("REQUEST_METHOD", "GET", 1);
 	setenv("SCRIPT_NAME", file, 1);
+	printf("SCRIPT_NAME = %s\n", file);
 	setenv("SERVER_NAME", ohost, 1);
+	printf("SERVER_PORT = %s\n", port);
 	setenv("SERVER_PORT", port, 1);
 	setenv("SERVER_LISTEN_NAME", bhost, 1);
+	printf("SERVER_LISTEN_NAME = %s\n", bhost);
 	if (istls) {
 		setenv("SERVER_PROTOCOL", "gophers/1.0", 1);
 	} else {
@@ -580,8 +592,10 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	setenv("SERVER_SOFTWARE", "geomyidae", 1);
 
 	setenv("X_GOPHER_SEARCH", sear, 1);
+	printf("X_GOPHER_SEARCH = %s\n", sear);
 	/* legacy compatibility */
 	setenv("SEARCHREQUEST", sear, 1);
+	printf("SEARCHREQUEST = %s\n", sear);
 
 	if (istls) {
 		setenv("GOPHERS", "on", 1);
@@ -624,16 +638,5 @@ humantime(const time_t *clock)
 	strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M %Z", tm);
 
 	return buf;
-}
-
-char *
-makebasepath(char *path, char *base)
-{
-	if (!(base[0] == '/' && base[1] == '\0') &&
-			strlen(path) > strlen(base)) {
-		return path + strlen(base);
-	} else {
-		return path;
-	}
 }
 

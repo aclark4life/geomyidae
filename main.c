@@ -59,7 +59,7 @@ int nlistfds = 0;
 char *argv0;
 char stdbase[] = "/var/gopher";
 char *stdport = "70";
-char *indexf[] = {"/index.gph", "/index.cgi", "/index.dcgi", "/index.bob", "/index.bin"};
+char *indexf[] = {"index.gph", "index.cgi", "index.dcgi", "index.bob", "index.bin"};
 char *nocgierr = "3Sorry, execution of the token '%s' was requested, but this "
 	    "is disabled in the server configuration.\tErr"
 	    "\tlocalhost\t70\r\n";
@@ -83,7 +83,7 @@ char *htredir = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 		"  </body>\n"
 		"</html>\n";
 char *selinval ="3Happy helping ☃ here: "
-		"Sorry, your selector does not start with / or contains '..'. "
+		"Sorry, your selector does contains '..'. "
 		"That's illegal here.\tErr\tlocalhost\t70\r\n.\r\n\r\n";
 
 int
@@ -142,12 +142,20 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	int len = 0, fd, i, maxrecv, pathfallthrough = 0;
 	filetype *type;
 
+	printf("handlerequest:\n");
+	printf("sock = %d; req = '%s';\n", sock, req);
+	printf("rlen = %d; base = '%s'; ohost = '%s'; port = %s;\n", rlen,
+			base, ohost, port);
+	printf("clienth = %s; clientp = %s; serverh = %s; serverp = %s;\n",
+			clienth, clientp, serverh, serverp);
+	printf("nocgi = %d; istls = %d;\n", nocgi, istls);
+
 	if (!istls) {
 		/*
 		 * If sticky bit is set on base dir and encryption is not
 		 * used, do not serve.
 		 */
-		if (stat(base, &dir) == -1)
+		if (stat(*base? base : "/", &dir) == -1)
 			return;
 		if (dir.st_mode & S_ISVTX) {
 			dprintf(sock, tlserr, recvc);
@@ -176,6 +184,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	c = strchr(recvb, '\n');
 	if (c)
 		c[0] = '\0';
+
 	sear = strchr(recvb, '\t');
 	if (sear != NULL) {
 		*sear++ = '\0';
@@ -228,29 +237,32 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	 * selectors.
 	 */
 
+	/* Strip off the arguments of req?args style. */
 	c = strchr(recvb, '?');
 	if (c != NULL) {
 		*c++ = '\0';
-		snprintf(args, sizeof(args), "%s", c);
+		snprintf(args, sizeof(args), "?%s", c);
 	}
+	printf("args = %s\n", args);
+	printf("recvb = %s\n", recvb);
 
-	if (recvb[0] == '\0') {
-		recvb[0] = '/';
-		recvb[1] = '\0';
+	/* Strip '/' at the end of the request. */
+	for (c = recvb + strlen(recvb) - 1; c >= recvb && c[0] == '/'; c--) {
+		/* Prepend to args. */
+		snprintf(args, sizeof(args), "/%s", args);
+		c[0] = '\0';
 	}
+	printf("args = %s\n", args);
 
-	/*
-	 * Do not allow requests not beginning with '/' or which contain
-	 * "..".
-	 */
-	if (recvb[0] != '/' || strstr(recvb, "..")){
+	/* Do not allow requests including "..". */
+	if (strstr(recvb, "..")) {
 		dprintf(sock, "%s", selinval);
 		return;
 	}
 
-	/* append base to request path (always starting with /), if base is a chroot don't append '/' */
-	if (snprintf(path, sizeof(path), "%s%s",
-	    base[0] == '/' && base[1] == '\0' ? "" : base,
+	printf("recvb = %s\n", recvb);
+	if (snprintf(path, sizeof(path), "%s%s%s", base,
+	    (*recvb != '/')? "/" : "",
 	    recvb) > sizeof(path)) {
 		if (loglvl & ERRORS) {
 			logentry(clienth, clientp, recvc,
@@ -259,6 +271,8 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		dprintf(sock, toolongerr, recvc);
 		return;
 	}
+	/* path is now always at least '/' */
+	printf("path = %s\n", path);
 
 	fd = -1;
 	/*
@@ -270,33 +284,54 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	 *	$args = $rest_of_path + "?" + $args
 	 */
 	if (stat(path, &dir) == -1) {
+		printf("Not found. Try backtraversal.\n");
 		memmove(argsc, args, strlen(args));
 		snprintf(path, sizeof(path), "%s", base);
-		recvbp = recvb + 1;
+		recvbp = recvb;
+
+		/*
+		 * Walk into the selector until some directory or file
+		 * does not exist. Then reconstruct the args, selector
+		 * etc.
+		 */
 		while (recvbp != NULL) {
-			sep = strsep(&recvbp, "/");
+			/* Traverse multiple / in selector. */
+			for (sep = recvbp; sep != recvbp && sep != recvbp+1;
+				sep = strsep(&recvbp, "/"));
+			printf("traversal directory = %s\n", sep);
+
+			/* Append found directory to path. */
 			snprintf(path+strlen(path), sizeof(path)-strlen(path),
 				"/%s", sep);
+			/* path is now always at least '/' */
+			printf("full traversal path = %s\n", path);
+
 			if (stat(path, &dir) == -1) {
+				/*
+				 * Current try was not found. Go back one
+				 * step and finish.
+				 */
 				c = strrchr(path, '/');
 				if (c != NULL) {
 					*c++ = '\0';
 					snprintf(args, sizeof(args),
-						"/%s%s%s%s%s",
+						"/%s%s%s%s",
 						c,
 						(recvbp != NULL)? "/" : "",
 						(recvbp != NULL)? recvbp : "",
-						(argsc[0] != '\0')? "?" : "",
 						(argsc[0] != '\0')? argsc : ""
 					);
+					printf("args = %s\n", args);
 				}
 				/* path fallthrough */
 				pathfallthrough = 1;
+				printf("pathfallthrough = 1\n");
 				break;
 			}
 		}
 	}
 
+	printf("path = %s\n", path);
 	if (stat(path, &dir) != -1) {
 		/*
 		 * If sticky bit is set, only serve if this is encrypted.
@@ -311,9 +346,11 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		}
 
 		if (S_ISDIR(dir.st_mode)) {
+			printf("S_ISDIR\n");
 			for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]);
 					i++) {
-				if (strlen(path) + strlen(indexf[i])
+				len = strlen(path);
+				if (len + strlen(indexf[i]) + (path[len-1] == '/')? 0 : 1
 						>= sizeof(path)) {
 					if (loglvl & ERRORS) {
 						logentry(clienth, clientp,
@@ -322,12 +359,18 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 					}
 					return;
 				}
-				strncat(path, indexf[i],
-						sizeof(path)-strlen(path)-1);
+				sprintf(path, "%s%s%s",
+					path,
+					(path[len-1] == '/')? "" : "/",
+					indexf[i]);
+				printf("path index = %s\n", path);
 				fd = open(path, O_RDONLY);
 				if (fd >= 0)
 					break;
-				path[strlen(path)-strlen(indexf[i])] = '\0';
+
+				/* Not found. Clear path from indexf. */
+				printf("len = %d\n", len);
+				path[len] = '\0';
 			}
 		} else {
 			fd = open(path, O_RDONLY);
@@ -342,10 +385,9 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		}
 	}
 
+	/* Some file was opened. Serve it. */
 	if (fd >= 0) {
 		close(fd);
-		if (loglvl & FILES)
-			logentry(clienth, clientp, recvc, "serving");
 
 		c = strrchr(path, '/');
 		if (c == NULL)
@@ -359,8 +401,10 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		if (pathfallthrough &&
 				!(type->f == handledcgi || type->f == handlecgi)) {
 			dprintf(sock, notfounderr, recvc);
-			if (loglvl & ERRORS)
-				logentry(clienth, clientp, recvc, "not found");
+			if (loglvl & ERRORS) {
+				logentry(clienth, clientp, recvc,
+					"handler in path fallthrough not allowed");
+			}
 			return;
 		}
 
@@ -369,14 +413,21 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 			if (loglvl & ERRORS)
 				logentry(clienth, clientp, recvc, "nocgi error");
 		} else {
+			if (loglvl & FILES)
+				logentry(clienth, clientp, recvc, "serving");
+
 			type->f(sock, path, port, base, args, sear, ohost,
 				clienth, serverh, istls);
 		}
 	} else {
-		/*
-		 * If we had to traverse the path, do not allow directory
-		 * listings, only dynamic content.
-		 */
+		if (pathfallthrough && S_ISDIR(dir.st_mode)) {
+			if (loglvl & ERRORS) {
+				logentry(clienth, clientp, recvc,
+					"directory listing in traversal not allowed");
+			}
+			return;
+		}
+
 		if (!pathfallthrough && S_ISDIR(dir.st_mode)) {
 			handledir(sock, path, port, base, args, sear, ohost,
 				clienth, serverh, istls);
@@ -791,7 +842,7 @@ main(int argc, char *argv[])
 			perror("chdir");
 			return 1;
 		}
-		base = "/";
+		base = "";
 		if (chroot(".") < 0) {
 			perror("chroot");
 			return 1;
@@ -801,9 +852,9 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* strip / at the end, except if it is "/" */
-	for (p = base + strlen(base); p > base + 1 && p[-1] == '/'; --p)
-		p[-1] = '\0';
+	/* strip / at the end of base */
+	for (p = base + strlen(base) - 1; p >= base && p[0] == '/'; --p)
+		p[0] = '\0';
 
 	if (dropprivileges(gr, us) < 0) {
 		perror("dropprivileges");
@@ -1063,21 +1114,32 @@ read_selector_again:
 					close(tlssocks[tlsclientreader? 1 : 0]);
 					do {
 						if (tlsclientreader) {
-							shuflen = read(tlssocks[0], shufbuf, sizeof(shufbuf)-1);
+							shuflen = read(tlssocks[0],
+								shufbuf,
+								sizeof(shufbuf)-1);
 						} else {
-							shuflen = tls_read(tlsclientctx, shufbuf, sizeof(shufbuf)-1);
+							shuflen = tls_read(tlsclientctx,
+								shufbuf,
+								sizeof(shufbuf)-1);
 						}
 						if (shuflen == -1 && errno == EINTR)
 							continue;
-						for (shufpos = 0; shufpos < shuflen; shufpos += wlen) {
+						for (shufpos = 0; shufpos < shuflen;
+								shufpos += wlen) {
 							if (tlsclientreader) {
-								wlen = tls_write(tlsclientctx, shufbuf+shufpos, shuflen-shufpos);
+								wlen = tls_write(tlsclientctx,
+									shufbuf+shufpos,
+									shuflen-shufpos);
 								if (wlen < 0) {
-									fprintf(stderr, "tls_write failed: %s\n", tls_error(tlsclientctx));
+									fprintf(stderr,
+										"tls_write failed: %s\n",
+										tls_error(tlsclientctx));
 									return 1;
 								}
 							} else {
-								wlen = write(tlssocks[1], shufbuf+shufpos, shuflen-shufpos);
+								wlen = write(tlssocks[1],
+									shufbuf+shufpos,
+									shuflen-shufpos);
 								if (wlen < 0) {
 									perror("write");
 									return 1;
