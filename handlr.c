@@ -167,9 +167,9 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 	if (args == NULL)
 		args = "";
 
-	dup2(sock, 0);
-	dup2(sock, 1);
-	dup2(sock, 2);
+	while (dup2(sock, 0) < 0 && errno == EINTR);
+	while (dup2(sock, 1) < 0 && errno == EINTR);
+	while (dup2(sock, 2) < 0 && errno == EINTR);
 	switch (fork()) {
 	case 0:
 		if (path != NULL) {
