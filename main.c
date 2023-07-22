@@ -3,6 +3,7 @@
  * by 20h
  */
 
+#include <limits.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <memory.h>
@@ -346,7 +347,7 @@ dothegopher:
 			for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]);
 					i++) {
 				len = strlen(rpath);
-				if (len + strlen(indexf[i]) + (rpath[len-1] == '/')? 0 : 1
+				if (len + strlen(indexf[i]) + ((rpath[len-1] == '/')? 0 : 1)
 						>= sizeof(rpath)) {
 					if (loglvl & ERRORS) {
 						logentry(clienth, clientp,

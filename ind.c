@@ -7,6 +7,7 @@
 	#define _GNU_SOURCE
 #endif
 
+#include <libgen.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
