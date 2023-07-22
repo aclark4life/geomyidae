@@ -547,7 +547,7 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	unsetenv("CONTENT_TYPE");
 	setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
 	/* TODO: Separate, if run like rest.dcgi. */
-	setenv("PATH_INFO", file, 1);
+	setenv("PATH_INFO", path+strlen(base), 1);
 	setenv("PATH_TRANSLATED", path, 1);
 
 	setenv("QUERY_STRING", args, 1);
