@@ -224,21 +224,6 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		return;
 	}
 
-	/*
-	 * FUTURE: Valid cases in gopher we overwrite here, but could be used
-	 * for other geomyidae features:
-	 *
-	 *	request string = "?..." -> "/?..."
-	 *	request string = "" -> "/"
-	 *	request string = "somestring" -> "/somestring"
-	 *
-	 * Be careful, when you consider those special cases to be used
-	 * for some feature. You can easily do good and bad.
-	 *
-	 * Look at printelem() in ind.c for the counterpart of producing
-	 * selectors.
-	 */
-
 	/* Strip off the arguments of req?args style. */
 	c = strchr(recvb, '?');
 	if (c != NULL) {
@@ -346,7 +331,6 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		}
 
 		if (S_ISDIR(dir.st_mode)) {
-			printf("S_ISDIR\n");
 			for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]);
 					i++) {
 				len = strlen(rpath);
@@ -362,7 +346,6 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 				if (rpath[len-1] != '/')
 					strcat(rpath, "/");
 				strcat(rpath, indexf[i]);
-				printf("path index = %s\n", rpath);
 				fd = open(rpath, O_RDONLY);
 				if (fd >= 0)
 					break;
