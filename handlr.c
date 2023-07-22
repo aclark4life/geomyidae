@@ -144,7 +144,7 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 		char *sear, char *ohost, char *chost, char *bhost, int istls,
 		char *sel, char *traverse)
 {
-	char *script, *path, *filec;
+	char *script, *path, *filec, *scriptc;
 
 	USED(base);
 	USED(port);
@@ -157,8 +157,9 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 	printf("sel = %s; traverse = %s;\n", sel, traverse);
 
 	filec = xstrdup(file);
+	scriptc = xstrdup(file);
 	path = dirname(filec);
-	script = path + strlen(path) + 1;
+	script = basename(scriptc);
 
 	if (sear == NULL)
 		sear = "";
@@ -189,6 +190,7 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 	default:
 		wait(NULL);
 		free(filec);
+		free(scriptc);
 		break;
 	}
 }
@@ -199,7 +201,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		char *sel, char *traverse)
 {
 	FILE *fp;
-	char *script, *path, *filec, *ln = NULL;
+	char *script, *path, *filec, *scriptc, *ln = NULL;
 	size_t linesiz = 0;
 	ssize_t n;
 	int outsocks[2], ret = 0;
@@ -216,8 +218,9 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		return;
 
 	filec = xstrdup(file);
+	scriptc = xstrdup(file);
 	path = dirname(filec);
-	script = path + strlen(path) + 1;
+	script = basename(scriptc);
 
 	if (sear == NULL)
 		sear = "";
@@ -276,6 +279,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		fclose(fp);
 		wait(NULL);
 		free(filec);
+		free(scriptc);
 		break;
 	}
 }
