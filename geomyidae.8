@@ -337,7 +337,7 @@ case: standard CGI (
 ), dynamic CGI
 (
 .Ic .dcgi
-) and http compatibility mode.
+) and HTTP compatibility mode.
 Despite the names, all three can accept input and generate dynamic content;
 the only difference is that dcgi re-formats it's output so it appears to
 the server as a standard geomyidae index (.gph) file. This makes the
@@ -362,7 +362,7 @@ arguments = string behind "?" in selector or ""
 host = server's hostname ("localhost" by default)
 port = server's port ("70" by default)
 traversal = remaining path from path traversal in REST case
-selector = raw selector or full req (See http compatibility mode.)
+selector = raw selector or full req (See HTTP compatibility mode.)
 .Ed
 .Pp
 All terms are tab-separated (per gopher protocol) which can cause some
@@ -419,12 +419,12 @@ Selector: /some/v1/service/add/something?args=value
 "/add/something" "/some/v1/service/add/something?args=value" is called
 .Ed
 .
-.Ss Http compatibility
+.Ss HTTP compatibility
 For maximum flexibility in case someone sends a HTTP request to gopher,
 geomyidae supports a special case of CGI. See this example:
 .Bd -literal -offset indent
 Client request: GET /some/path HTTP/1.1
--> /GET exists and is exectuable
+-> /GET exists and is executable
 -> /GET "" "" $host $port "" "GET /some/path HTTP/1.1" is called
 .Ed
 
