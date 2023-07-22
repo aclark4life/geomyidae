@@ -187,19 +187,24 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	if (c)
 		c[0] = '\0';
 
+	memmove(recvc, recvb, rlen+1);
 	/*
 	 * Try to guess if we have some HTTP-like protocol compatibility
 	 * mode.
 	 */
 	if (!nocgi && recvb[0] != '/' && (c = strchr(recvb, ' '))) {
-		*c = '\0';
+		*c++ = '\0';
 		if (strchr(recvb, '/'))
 			goto dothegopher;
 		if (snprintf(path, sizeof(path), "%s/%s", base, recvb) <= sizeof(path)) {
 			if (realpath(path, (char *)rpath)) {
-				if (stat(rpath, &dir)) {
-					handlecgi(sock, rpath, port, base, NULL, NULL, ohost,
-						clienth, serverh, istls, req, NULL);
+				if (stat(rpath, &dir) == 0) {
+					if (loglvl & FILES)
+						logentry(clienth, clientp, recvc, "compatibility serving");
+
+					handlecgi(sock, rpath, port, base, "", "", ohost,
+						clienth, serverh, istls, req, "");
+					return;
 				}
 			}
 		}
