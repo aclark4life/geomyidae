@@ -143,14 +143,6 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	int len = 0, fd, i, maxrecv, pathfallthrough = 0;
 	filetype *type;
 
-	printf("handlerequest:\n");
-	printf("sock = %d; req = '%s';\n", sock, req);
-	printf("rlen = %d; base = '%s'; ohost = '%s'; port = %s;\n", rlen,
-			base, ohost, port);
-	printf("clienth = %s; clientp = %s; serverh = %s; serverp = %s;\n",
-			clienth, clientp, serverh, serverp);
-	printf("nocgi = %d; istls = %d;\n", nocgi, istls);
-
 	if (!istls) {
 		/*
 		 * If sticky bit is set on base dir and encryption is not
@@ -263,8 +255,6 @@ dothegopher:
 		*c++ = '\0';
 		snprintf(args, sizeof(args), "%s", c);
 	}
-	printf("args = %s\n", args);
-	printf("recvb = %s\n", recvb);
 
 	/* Strip '/' at the end of the request. */
 	for (c = recvb + strlen(recvb) - 1; c >= recvb && c[0] == '/'; c--) {
@@ -273,9 +263,8 @@ dothegopher:
 		snprintf(traverse, sizeof(traverse), "/%s", traversec);
 		c[0] = '\0';
 	}
-	printf("traverse = %s\n", traverse);
 
-	printf("recvb = %s\n", recvb);
+	/* path is now always at least '/' */
 	if (snprintf(path, sizeof(path), "%s%s%s", base,
 	    (*recvb != '/')? "/" : "",
 	    recvb) > sizeof(path)) {
@@ -286,8 +275,6 @@ dothegopher:
 		dprintf(sock, toolongerr, recvc);
 		return;
 	}
-	/* path is now always at least '/' */
-	printf("path = %s\n", path);
 
 	fd = -1;
 	/*
@@ -330,7 +317,6 @@ dothegopher:
 				);
 				/* path fallthrough */
 				pathfallthrough = 1;
-				printf("pathfallthrough = 1\n");
 				break;
 			}
 			/* Append found directory to path. */
@@ -343,7 +329,6 @@ dothegopher:
 		if (loglvl & ERRORS)
 			logentry(clienth, clientp, recvc, "not found");
 	}
-	printf("rpath = %s\n", rpath);
 	if (stat(rpath, &dir) != -1) {
 		/*
 		 * If sticky bit is set, only serve if this is encrypted.

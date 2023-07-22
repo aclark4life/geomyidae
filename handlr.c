@@ -149,13 +149,6 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 	USED(base);
 	USED(port);
 
-	printf("handlecgi:\n");
-	printf("sock = %d; file = %s; port = %s; base = %s; args = %s;\n",
-			sock, file, port, base, args);
-	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
-			sear, ohost, chost, bhost, istls);
-	printf("sel = %s; traverse = %s;\n", sel, traverse);
-
 	filec = xstrdup(file);
 	scriptc = xstrdup(file);
 	path = dirname(filec);
@@ -206,13 +199,6 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 	ssize_t n;
 	int outsocks[2], ret = 0;
 	gphelem *el;
-
-	printf("handledcgi:\n");
-	printf("sock = %d; file = %s; port = %s; base = %s; args = %s;\n",
-			sock, file, port, base, args);
-	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
-			sear, ohost, chost, bhost, istls);
-	printf("sel = %s; traverse = %s;\n", sel, traverse);
 
 	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, outsocks) < 0)
 		return;
