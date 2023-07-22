@@ -191,11 +191,11 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	 * Try to guess if we have some HTTP-like protocol compatibility
 	 * mode.
 	 */
-	if (!nocgi && recvb[0] != '/' && (c = strchr(recvb, " "))) {
+	if (!nocgi && recvb[0] != '/' && (c = strchr(recvb, ' '))) {
 		*c = '\0';
 		if (strchr(recvb, '/'))
 			goto dothegopher;
-		if (snprintf(path, "%s/%s", base, recvb) <= sizeof(path)) {
+		if (snprintf(path, sizeof(path), "%s/%s", base, recvb) <= sizeof(path)) {
 			if (realpath(path, (char *)rpath)) {
 				if (stat(rpath, &dir)) {
 					handlecgi(sock, rpath, port, base, NULL, NULL, ohost,
