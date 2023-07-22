@@ -159,8 +159,6 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 	filec = xstrdup(file);
 	path = dirname(filec);
 	script = path + strlen(path) + 1;
-	printf("path = %s\n", path);
-	printf("script = %s\n", script);
 
 	if (sear == NULL)
 		sear = "";

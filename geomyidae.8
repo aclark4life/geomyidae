@@ -331,22 +331,28 @@ Search Veronica II
 Telnet to SDF Public Access Unix System
 .El
 .Sh DYNAMIC CONTENT (gopher CGI)
-There are two options provided for dynamic content creation: standard CGI (
+There are two options provided for dynamic content creation and a special
+case: standard CGI (
 .Ic .cgi
-) and dynamic CGI
+), dynamic CGI
 (
 .Ic .dcgi
-). Despite the names, both can accept input and generate dynamic content;
-the only difference is the latter re-formats it's output so it appears to
+) and http compatibility mode.
+Despite the names, all three can accept input and generate dynamic content;
+the only difference is that dcgi re-formats it's output so it appears to
 the server as a standard geomyidae index (.gph) file. This makes the
 creation of on-the-fly gopher directories much easier (see examples).
 All scripts must be under the gopher root directory and be executable by
 the same user:group running geomyidae.  Consequently, it is best to use
 the -u and -g server options to avoid running as root.
 .Pp
+Executed scripts get the full I/O of the socket bound to stdin and stdout. You
+are thus able to write long-lasting streaming services. Radio or TV stations over
+gopher are possible that way.
+.Pp
 Both .cgi and .dcgi scripts have the same argument call structure (as seen by geomyidae):
 .Bd -literal -offset indent
-executable.[d]cgi $search $arguments $host $port
+executable.[d]cgi $search $arguments $host $port $traversal $selector
 .Ed
 .Pp
 where
@@ -355,8 +361,8 @@ search = query string (type 7) or "" (type 0)
 arguments = string behind "?" in selector or ""
 host = server's hostname ("localhost" by default)
 port = server's port ("70" by default)
-traversal = remaining path from path traversal
-selector = raw selector
+traversal = remaining path from path traversal in REST case
+selector = raw selector or full req (See http compatibility mode.)
 .Ed
 .Pp
 All terms are tab-separated (per gopher protocol) which can cause some
@@ -381,7 +387,7 @@ PATH_TRANSLATED = absolute path with script which is executed
 QUERY_STRING = arguments (See above.)
 SELECTOR = raw selector
 REQUEST = raw selector
-TRAVERSAL = traversel (See above.)
+TRAVERSAL = traversal (See above.)
 REMOTE_ADDR = IP of the client
 REMOTE_HOST = REMOTE_ADDR
 REQUEST_METHOD = `GET'
@@ -394,6 +400,23 @@ SERVER_SOFTWARE = `geomyidae'
 X_GOPHER_SEARCH = search (See above.)
 SEARCHREQUEST = search (For backwards compatibility.)
 HTTPS and GOPHERS = set, if TLS is used
+.Ed
+.
+.Ss The REST path handling
+If a client requests a path in a selector, which has no corresponding
+file or path found, geomyidae will try to traverse from the
+.Fl b Ar base
+path until a path component / directory is not found. Then geomyidae
+tries to find some index.dcgi or index.cgi file in the last existing
+directory. If this is found and the index files are executable, geomyidae
+will execute them using the traversal and TRAVERSAL parameter and
+environment variable being set to the rest path.
+.Bd -literal -offset indent
+Selector: /some/v1/service/add/something?args=value
+-> /some/v1/service exists
+-> /some/v1/service/index.dcgi exists
+-> /some/v1/service/index.dcgi "" "args=value" $host $port
+"/add/something" "/some/v1/service/add/something?args=value" is called
 .Ed
 .
 .Ss Some CGI Examples
@@ -490,9 +513,11 @@ Phrases_of_the_Ages.txt
 Care should to be exercised to avoid creating miss-Typed entries, unwanted
 recursions, and/or unintended writes in the working directory.
 .Sh HAPROXY SUPPORT
-Geomyidae has
+geomyidae has
 .Em HAProxy
-support. It can be enabled using the -y parameter.
+support. It can be enabled using the
+.Fl y
+parameter.
 .
 .Sh LOG FILES
 The log file (ie. /var/log/gopherd.log) has the following structure:
