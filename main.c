@@ -187,6 +187,12 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	if (c)
 		c[0] = '\0';
 
+	/* Do not allow requests including "..". */
+	if (strstr(recvb, "..")) {
+		dprintf(sock, "%s", selinval);
+		return;
+	}
+
 	sear = strchr(recvb, '\t');
 	if (sear != NULL) {
 		*sear++ = '\0';
@@ -244,12 +250,6 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		c[0] = '\0';
 	}
 	printf("traverse = %s\n", traverse);
-
-	/* Do not allow requests including "..". */
-	if (strstr(recvb, "..")) {
-		dprintf(sock, "%s", selinval);
-		return;
-	}
 
 	printf("recvb = %s\n", recvb);
 	if (snprintf(path, sizeof(path), "%s%s%s", base,
