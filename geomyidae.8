@@ -419,6 +419,18 @@ Selector: /some/v1/service/add/something?args=value
 "/add/something" "/some/v1/service/add/something?args=value" is called
 .Ed
 .
+.Ss Http compatibility
+For maximum flexibility in case someone sends a HTTP request to gopher,
+geomyidae supports a special case of CGI. See this example:
+.Bd -literal -offset indent
+Client request: GET /some/path HTTP/1.1
+-> /GET exists and is exectuable
+-> /GET "" "" $host $port "" "GET /some/path HTTP/1.1" is called
+.Ed
+
+This allows for example simple scripts for icecast upload compatibility
+or handling transparent HTTP right next to gopher, getting TLS for free.
+.
 .Ss Some CGI Examples
 Note: these are a very simple examples with no fitness checks with respect
 to safety/security.
