@@ -23,7 +23,7 @@
  * base .... base path of geomyidae, never ends in '/', so chroot is ''
  *   Sample: /var/gopher
  * args .... Gives all variable input from the selector in some way.
- *   Sample: /with/dirs////?key=value
+ *   Sample: key=value
  * sear .... search part of request
  *   Sample: search what?
  * ohost ... host of geomyidae (See -h in geomyidae(8))
@@ -34,25 +34,29 @@
  *   Sample: 78.46.175.99
  * istls ... set to 1, if TLS was used for thr request
  *   Sample: 1
+ * sel ..... Gives the raw selector after processing.
+ *   Sample: /get/some/script/with/dirs////?key=value
+ * traversal ..... Gives the raw selector after processing.
+ *   Sample: /with/dirs////
  */
 
 void handledir(int sock, char *path, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, char *bhost,
-			int istls);
+			int istls, char *sel, char *traverse);
 void handlegph(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, char *bhost,
-			int istls);
+			int istls, char *sel, char *traverse);
 void handlebin(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, char *bhost,
-			int istls);
+			int istls, char *sel, char *traverse);
 void handletxt(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, char *bhost,
-			int istls);
+			int istls, char *sel, char *traverse);
 void handlecgi(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, char *bhost,
-			int istls);
+			int istls, char *sel, char *traverse);
 void handledcgi(int sock, char *file, char *port, char *base, char *args,
 			char *sear, char *ohost, char *chost, char *bhost,
-			int istls);
+			int istls, char *sel, char *traverse);
 
 #endif

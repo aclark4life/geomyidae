@@ -137,8 +137,9 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	      char *serverp, int nocgi, int istls)
 {
 	struct stat dir;
-	char recvc[1025], recvb[1025], path[1025], args[1025], argsc[1025],
-		*sear, *c, *sep, *recvbp;
+	char recvc[1025], recvb[1025], path[PATH_MAX+1], rpath[PATH_MAX+1], args[1025],
+		argsc[1025], traverse[1025], traversec[1025],
+		*sear, *sep, *recvbp, *c;
 	int len = 0, fd, i, maxrecv, pathfallthrough = 0;
 	filetype *type;
 
@@ -172,6 +173,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	memset(recvc, 0, sizeof(recvc));
 	memset(args, 0, sizeof(args));
 	memset(argsc, 0, sizeof(argsc));
+	memset(traverse, 0, sizeof(argsc));
 
 	maxrecv = sizeof(recvb) - 1;
 	if (rlen > maxrecv || rlen < 0)
@@ -241,18 +243,19 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	c = strchr(recvb, '?');
 	if (c != NULL) {
 		*c++ = '\0';
-		snprintf(args, sizeof(args), "?%s", c);
+		snprintf(args, sizeof(args), "%s", c);
 	}
 	printf("args = %s\n", args);
 	printf("recvb = %s\n", recvb);
 
 	/* Strip '/' at the end of the request. */
 	for (c = recvb + strlen(recvb) - 1; c >= recvb && c[0] == '/'; c--) {
-		/* Prepend to args. */
-		snprintf(args, sizeof(args), "/%s", args);
+		memmove(traversec, traverse, strlen(traverse));
+		/* Prepend to traverse. */
+		snprintf(traverse, sizeof(traverse), "/%s", traversec);
 		c[0] = '\0';
 	}
-	printf("args = %s\n", args);
+	printf("traverse = %s\n", traverse);
 
 	/* Do not allow requests including "..". */
 	if (strstr(recvb, "..")) {
@@ -284,8 +287,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	 *	$args = $rest_of_path + "?" + $args
 	 */
 	if (stat(path, &dir) == -1) {
-		printf("Not found. Try backtraversal.\n");
-		memmove(argsc, args, strlen(args));
+		memmove(traversec, traverse, strlen(traverse));
 		snprintf(path, sizeof(path), "%s", base);
 		recvbp = recvb;
 
@@ -295,44 +297,42 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		 * etc.
 		 */
 		while (recvbp != NULL) {
-			/* Traverse multiple / in selector. */
-			for (sep = recvbp; sep != recvbp && sep != recvbp+1;
-				sep = strsep(&recvbp, "/"));
-			printf("traversal directory = %s\n", sep);
+			/* Traverse multiple empty / in selector. */
+			while(recvbp[0] == '/')
+				recvbp++;
+			sep = strchr(recvbp, '/');
+			if (sep != NULL)
+				*sep++ = '\0';
 
-			/* Append found directory to path. */
 			snprintf(path+strlen(path), sizeof(path)-strlen(path),
-				"/%s", sep);
+				"/%s", recvbp);
 			/* path is now always at least '/' */
-			printf("full traversal path = %s\n", path);
-
 			if (stat(path, &dir) == -1) {
-				/*
-				 * Current try was not found. Go back one
-				 * step and finish.
-				 */
-				c = strrchr(path, '/');
-				if (c != NULL) {
-					*c++ = '\0';
-					snprintf(args, sizeof(args),
-						"/%s%s%s%s",
-						c,
-						(recvbp != NULL)? "/" : "",
-						(recvbp != NULL)? recvbp : "",
-						(argsc[0] != '\0')? argsc : ""
-					);
-					printf("args = %s\n", args);
-				}
+				path[strlen(path)-strlen(recvbp)-1] = '\0';
+				snprintf(traverse, sizeof(traverse),
+					"/%s%s%s%s",
+					recvbp,
+					(sep != NULL)? "/" : "",
+					(sep != NULL)? sep : "",
+					(traversec[0] != '\0')? traversec : ""
+				);
 				/* path fallthrough */
 				pathfallthrough = 1;
 				printf("pathfallthrough = 1\n");
 				break;
 			}
+			/* Append found directory to path. */
+			recvbp = sep;
 		}
 	}
 
-	printf("path = %s\n", path);
-	if (stat(path, &dir) != -1) {
+	if (realpath(path, (char *)&rpath) == NULL) {
+		dprintf(sock, notfounderr, recvc);
+		if (loglvl & ERRORS)
+			logentry(clienth, clientp, recvc, "not found");
+	}
+	printf("rpath = %s\n", rpath);
+	if (stat(rpath, &dir) != -1) {
 		/*
 		 * If sticky bit is set, only serve if this is encrypted.
 		 */
@@ -349,9 +349,9 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 			printf("S_ISDIR\n");
 			for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]);
 					i++) {
-				len = strlen(path);
-				if (len + strlen(indexf[i]) + (path[len-1] == '/')? 0 : 1
-						>= sizeof(path)) {
+				len = strlen(rpath);
+				if (len + strlen(indexf[i]) + (rpath[len-1] == '/')? 0 : 1
+						>= sizeof(rpath)) {
 					if (loglvl & ERRORS) {
 						logentry(clienth, clientp,
 							recvc,
@@ -359,21 +359,19 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 					}
 					return;
 				}
-				sprintf(path, "%s%s%s",
-					path,
-					(path[len-1] == '/')? "" : "/",
-					indexf[i]);
-				printf("path index = %s\n", path);
-				fd = open(path, O_RDONLY);
+				if (rpath[len-1] != '/')
+					strcat(rpath, "/");
+				strcat(rpath, indexf[i]);
+				printf("path index = %s\n", rpath);
+				fd = open(rpath, O_RDONLY);
 				if (fd >= 0)
 					break;
 
 				/* Not found. Clear path from indexf. */
-				printf("len = %d\n", len);
-				path[len] = '\0';
+				rpath[len] = '\0';
 			}
 		} else {
-			fd = open(path, O_RDONLY);
+			fd = open(rpath, O_RDONLY);
 			if (fd < 0) {
 				dprintf(sock, notfounderr, recvc);
 				if (loglvl & ERRORS) {
@@ -389,9 +387,9 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	if (fd >= 0) {
 		close(fd);
 
-		c = strrchr(path, '/');
+		c = strrchr(rpath, '/');
 		if (c == NULL)
-			c = path;
+			c = rpath;
 		type = gettype(c);
 
 		/*
@@ -416,8 +414,8 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 			if (loglvl & FILES)
 				logentry(clienth, clientp, recvc, "serving");
 
-			type->f(sock, path, port, base, args, sear, ohost,
-				clienth, serverh, istls);
+			type->f(sock, rpath, port, base, args, sear, ohost,
+				clienth, serverh, istls, recvc, traverse);
 		}
 	} else {
 		if (pathfallthrough && S_ISDIR(dir.st_mode)) {
@@ -429,8 +427,8 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		}
 
 		if (!pathfallthrough && S_ISDIR(dir.st_mode)) {
-			handledir(sock, path, port, base, args, sear, ohost,
-				clienth, serverh, istls);
+			handledir(sock, rpath, port, base, args, sear, ohost,
+				clienth, serverh, istls, recvc, traverse);
 			if (loglvl & DIRS) {
 				logentry(clienth, clientp, recvc,
 							"dir listing");

@@ -24,7 +24,8 @@
 
 void
 handledir(int sock, char *path, char *port, char *base, char *args,
-		char *sear, char *ohost, char *chost, char *bhost, int istls)
+		char *sear, char *ohost, char *chost, char *bhost, int istls,
+		char *sel, char *traverse)
 {
 	char *pa, *file, *e, *par;
 	struct dirent **dirent;
@@ -35,12 +36,8 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 	USED(args);
 	USED(sear);
 	USED(bhost);
-
-	printf("handledir:\n");
-	printf("sock = %d; path = %s; port = %s; base = %s; args = %s;\n",
-			sock, path, port, base, args);
-	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
-			sear, ohost, chost, bhost, istls);
+	USED(sel);
+	USED(traverse);
 
 	pa = xstrdup(path);
 
@@ -70,7 +67,6 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 					pa,
 					pa[strlen(pa)-1] == '/'? "" : "/",
 					dirent[i]->d_name);
-			printf("handledir: smprintf file = %s\n", file);
 			if (stat(file, &st) >= 0 && S_ISDIR(st.st_mode))
 				type = gettype("index.gph");
 			ret = dprintf(sock,
@@ -93,7 +89,8 @@ handledir(int sock, char *path, char *port, char *base, char *args,
 
 void
 handlegph(int sock, char *file, char *port, char *base, char *args,
-		char *sear, char *ohost, char *chost, char *bhost, int istls)
+		char *sear, char *ohost, char *chost, char *bhost, int istls,
+		char *sel, char *traverse)
 {
 	gphindex *act;
 	int i, ret = 0;
@@ -101,12 +98,8 @@ handlegph(int sock, char *file, char *port, char *base, char *args,
 	USED(args);
 	USED(sear);
 	USED(bhost);
-
-	printf("handlegph:\n");
-	printf("sock = %d; file = %s; port = %s; base = %s; args = %s;\n",
-			sock, file, port, base, args);
-	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
-			sear, ohost, chost, bhost, istls);
+	USED(sel);
+	USED(traverse);
 
 	act = gph_scanfile(file);
 	if (act != NULL) {
@@ -124,7 +117,8 @@ handlegph(int sock, char *file, char *port, char *base, char *args,
 
 void
 handlebin(int sock, char *file, char *port, char *base, char *args,
-		char *sear, char *ohost, char *chost, char *bhost, int istls)
+		char *sear, char *ohost, char *chost, char *bhost, int istls,
+		char *sel, char *traverse)
 {
 	int fd;
 
@@ -134,6 +128,8 @@ handlebin(int sock, char *file, char *port, char *base, char *args,
 	USED(sear);
 	USED(ohost);
 	USED(bhost);
+	USED(sel);
+	USED(traverse);
 
 	fd = open(file, O_RDONLY);
 	if (fd >= 0) {
@@ -145,9 +141,10 @@ handlebin(int sock, char *file, char *port, char *base, char *args,
 
 void
 handlecgi(int sock, char *file, char *port, char *base, char *args,
-		char *sear, char *ohost, char *chost, char *bhost, int istls)
+		char *sear, char *ohost, char *chost, char *bhost, int istls,
+		char *sel, char *traverse)
 {
-	char *script, *path;
+	char *script, *path, *filec;
 
 	USED(base);
 	USED(port);
@@ -157,9 +154,10 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 			sock, file, port, base, args);
 	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
 			sear, ohost, chost, bhost, istls);
+	printf("sel = %s; traverse = %s;\n", sel, traverse);
 
-	path = xstrdup(file);
-	path = dirname(path);
+	filec = xstrdup(file);
+	path = dirname(filec);
 	script = path + strlen(path) + 1;
 	printf("path = %s\n", path);
 	printf("script = %s\n", script);
@@ -180,7 +178,7 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 		}
 
 		setcgienviron(script, file, port, base, args, sear, ohost, chost,
-				bhost, istls);
+				bhost, istls, sel, traverse);
 
 		if (execl(file, script, sear, args, ohost, port,
 				(char *)NULL) == -1) {
@@ -192,17 +190,18 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 		break;
 	default:
 		wait(NULL);
-		free(path);
+		free(filec);
 		break;
 	}
 }
 
 void
 handledcgi(int sock, char *file, char *port, char *base, char *args,
-		char *sear, char *ohost, char *chost, char *bhost, int istls)
+		char *sear, char *ohost, char *chost, char *bhost, int istls,
+		char *sel, char *traverse)
 {
 	FILE *fp;
-	char *script, *path, *ln = NULL;
+	char *script, *path, *filec, *ln = NULL;
 	size_t linesiz = 0;
 	ssize_t n;
 	int outsocks[2], ret = 0;
@@ -213,12 +212,13 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 			sock, file, port, base, args);
 	printf("sear = %s; ohost = %s; chost = %s; bhost = %s; istls = %d;\n",
 			sear, ohost, chost, bhost, istls);
+	printf("sel = %s; traverse = %s;\n", sel, traverse);
 
 	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, outsocks) < 0)
 		return;
 
-	path = xstrdup(file);
-	path = dirname(path);
+	filec = xstrdup(file);
+	path = dirname(filec);
 	script = path + strlen(path) + 1;
 
 	if (sear == NULL)
@@ -238,7 +238,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		}
 
 		setcgienviron(script, file, port, base, args, sear, ohost, chost,
-				bhost, istls);
+				bhost, istls, sel, traverse);
 
 		if (execl(file, script, sear, args, ohost, port,
 				(char *)NULL) == -1) {
@@ -277,7 +277,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		free(ln);
 		fclose(fp);
 		wait(NULL);
-		free(path);
+		free(filec);
 		break;
 	}
 }

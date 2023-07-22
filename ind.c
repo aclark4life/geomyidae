@@ -535,7 +535,8 @@ reverselookup(char *host)
 
 void
 setcgienviron(char *file, char *path, char *port, char *base, char *args,
-		char *sear, char *ohost, char *chost, char *bhost, int istls)
+		char *sear, char *ohost, char *chost, char *bhost, int istls,
+		char *sel, char *traverse)
 {
 	/*
 	 * TODO: Clean environment from possible unsafe environment variables.
@@ -547,26 +548,19 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
 	/* TODO: Separate, if run like rest.dcgi. */
 	setenv("PATH_INFO", file, 1);
-	printf("PATH_INFO = %s\n", file);
 	setenv("PATH_TRANSLATED", path, 1);
-	printf("PATH_TRANSLATED = %s\n", path);
 
 	setenv("QUERY_STRING", args, 1);
-	printf("QUERY_STRING = %s\n", args);
-	/* legacy compatibility */
-	setenv("SELECTOR", args, 1);
-	printf("SELECTOR = %s\n", args);
-	setenv("REQUEST", args, 1);
-	printf("REQUEST = %s\n", args);
+	setenv("SELECTOR", sel, 1);
+	setenv("REQUEST", sel, 1);
+	setenv("TRAVERSAL", traverse, 1);
 
 	setenv("REMOTE_ADDR", chost, 1);
-	printf("REMOTE_ADDR = %s\n", chost);
 	/*
 	 * Don't do a reverse lookup on every call. Only do when needed, in
 	 * the script. The RFC allows us to set the IP to the value.
 	 */
 	setenv("REMOTE_HOST", chost, 1);
-	printf("REMOTE_HOST = %s\n", chost);
 	/* Please do not implement identd here. */
 	unsetenv("REMOTE_IDENT");
 	unsetenv("REMOTE_USER");
@@ -578,12 +572,9 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	 */
 	setenv("REQUEST_METHOD", "GET", 1);
 	setenv("SCRIPT_NAME", file, 1);
-	printf("SCRIPT_NAME = %s\n", file);
 	setenv("SERVER_NAME", ohost, 1);
-	printf("SERVER_PORT = %s\n", port);
 	setenv("SERVER_PORT", port, 1);
 	setenv("SERVER_LISTEN_NAME", bhost, 1);
-	printf("SERVER_LISTEN_NAME = %s\n", bhost);
 	if (istls) {
 		setenv("SERVER_PROTOCOL", "gophers/1.0", 1);
 	} else {
@@ -592,10 +583,8 @@ setcgienviron(char *file, char *path, char *port, char *base, char *args,
 	setenv("SERVER_SOFTWARE", "geomyidae", 1);
 
 	setenv("X_GOPHER_SEARCH", sear, 1);
-	printf("X_GOPHER_SEARCH = %s\n", sear);
 	/* legacy compatibility */
 	setenv("SEARCHREQUEST", sear, 1);
-	printf("SEARCHREQUEST = %s\n", sear);
 
 	if (istls) {
 		setenv("GOPHERS", "on", 1);

@@ -352,9 +352,11 @@ executable.[d]cgi $search $arguments $host $port
 where
 .Bd -literal -offset indent
 search = query string (type 7) or "" (type 0)
-arguments = string after "?" in the path, the remaining path or ""
+arguments = string behind "?" in selector or ""
 host = server's hostname ("localhost" by default)
 port = server's port ("70" by default)
+traversal = remaining path from path traversal
+selector = raw selector
 .Ed
 .Pp
 All terms are tab-separated (per gopher protocol) which can cause some
@@ -377,8 +379,9 @@ GATEWAY_INTERFACE = `CGI/1.1'
 PATH_INFO = script which is executed
 PATH_TRANSLATED = absolute path with script which is executed
 QUERY_STRING = arguments (See above.)
-SELECTOR = arguments (For backwards compatibility.)
-REQUEST = arguments (For backwards compatibility.)
+SELECTOR = raw selector
+REQUEST = raw selector
+TRAVERSAL = traversel (See above.)
 REMOTE_ADDR = IP of the client
 REMOTE_HOST = REMOTE_ADDR
 REQUEST_METHOD = `GET'

@@ -15,7 +15,7 @@ struct filetype {
         char *end;
         char *type;
         void (* f)(int, char *, char *, char *, char *, char *, char *,
-		char *, char *, int);
+		char *, char *, int, char *, char *);
 };
 
 filetype *gettype(char *filename);
@@ -51,7 +51,7 @@ char *smprintf(char *fmt, ...);
 char *reverselookup(char *host);
 void setcgienviron(char *file, char *path, char *port, char *base,
 		char *args, char *sear, char *ohost, char *chost,
-		char *bhost, int istls);
+		char *bhost, int istls, char *sel, char *traverse);
 char *humansize(off_t n);
 char *humantime(const time_t *clock);
 
