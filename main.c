@@ -199,7 +199,10 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		 * mode. DO NOT ADD ANY OTHER GOPHER+ SUPPORT. GOPHER+ IS
 		 * CRAP.
 		 */
-		if (*sear == '+' || *sear == '$' || *sear == '!' || *sear == '\0') {
+		if ((sear[0] == '+' && sear[1] == '\0')
+				|| (sear[0] == '$' && sear[1] == '\0')
+				|| (sear[0] == '!' && sear[1] == '\0')
+				|| sear[0] == '\0') {
 			if (loglvl & GPLUS)
 				logentry(clienth, clientp, recvb, "gopher+ redirect");
 			dprintf(sock, "+-2\r\n");
