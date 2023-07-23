@@ -54,6 +54,7 @@ void setcgienviron(char *file, char *path, char *port, char *base,
 		char *bhost, int istls, char *sel, char *traverse);
 char *humansize(off_t n);
 char *humantime(const time_t *clock);
+void lingersock(int sock);
 
 #endif
 

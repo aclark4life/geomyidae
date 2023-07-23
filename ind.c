@@ -630,3 +630,31 @@ humantime(const time_t *clock)
 	return buf;
 }
 
+void
+lingersock(int sock)
+{
+	struct linger lingerie;
+	int j;
+
+	/*
+	 * On close only wait for at maximum 60 seconds for all data to be
+	 * transmitted before forcefully closing the connection.
+	 */
+	lingerie.l_onoff = 1;
+	lingerie.l_linger = 60;
+	setsockopt(sock, SOL_SOCKET, SO_LINGER,
+			&lingerie, sizeof(lingerie));
+
+	/*
+	 * Force explicit flush of buffers using TCP_NODELAY.
+	 */
+	j = 1;
+	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &j, sizeof(int));
+	waitforpendingbytes(sock);
+	j = 0;
+	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &j, sizeof(int));
+	shutdown(sock, SHUT_RDWR);
+
+	return;
+}
+
