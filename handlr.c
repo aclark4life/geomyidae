@@ -172,7 +172,7 @@ handlecgi(int sock, char *file, char *port, char *base, char *args,
 		setcgienviron(script, file, port, base, args, sear, ohost, chost,
 				bhost, istls, sel, traverse);
 
-		if (execl(file, script, sear, args, ohost, port,
+		if (execl(file, script, sear, args, ohost, port, traverse, sel,
 				(char *)NULL) == -1) {
 			perror("execl");
 			_exit(1);
@@ -227,7 +227,7 @@ handledcgi(int sock, char *file, char *port, char *base, char *args,
 		setcgienviron(script, file, port, base, args, sear, ohost, chost,
 				bhost, istls, sel, traverse);
 
-		if (execl(file, script, sear, args, ohost, port,
+		if (execl(file, script, sear, args, ohost, port, traverse, sel,
 				(char *)NULL) == -1) {
 			perror("execl");
 			_exit(1);
