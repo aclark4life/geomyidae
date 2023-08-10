@@ -356,6 +356,17 @@ dothegopher:
 					}
 					return;
 				}
+				/*
+				 * The size check for strcat to work is
+				 * above.
+				 *
+				 * Until strlcat isn't properly in all
+				 * linux libcs, we keep to this. OpenBSD
+				 * will complain about strcat and
+				 * smart-ass gcc will cmplain about
+				 * strncat of one char static char array
+				 * is an overflow.
+				 */
 				if (rpath[len-1] != '/')
 					strcat(rpath, "/");
 				strcat(rpath, indexf[i]);
