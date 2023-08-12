@@ -464,7 +464,6 @@ sighandler(int sig)
 	case SIGQUIT:
 	case SIGABRT:
 	case SIGTERM:
-	case SIGKILL:
 		if (dosyslog) {
 			closelog();
 		} else if (logfile != NULL && glfd != -1) {
@@ -493,7 +492,6 @@ initsignals(void)
 	signal(SIGQUIT, sighandler);
 	signal(SIGABRT, sighandler);
 	signal(SIGTERM, sighandler);
-	signal(SIGKILL, sighandler);
 
 	signal(SIGPIPE, SIG_IGN);
 }
