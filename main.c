@@ -1162,7 +1162,11 @@ read_selector_again:
 					} while (shuflen > 0);
 
 					if (tlsclientreader) {
-						tls_close(tlsclientctx);
+						wlen = TLS_WANT_POLLIN;
+						while (wlen == TLS_WANT_POLLIN \
+								wlen == TLS_WANT_POLLOUT) {
+							wlen = tls_close(tlsclientctx);
+						}
 						tls_free(tlsclientctx);
 					}
 
