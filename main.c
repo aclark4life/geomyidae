@@ -1134,6 +1134,11 @@ read_selector_again:
 								wlen = tls_write(tlsclientctx,
 									shufbuf+shufpos,
 									shuflen-shufpos);
+								if (wlen == TLS_WANT_POLLIN
+									|| wlen == TLS_WANT_POLLOUT) {
+									wlan = 0;
+									continue;
+								}
 								if (wlen < 0) {
 									fprintf(stderr,
 										"tls_write failed: %s\n",
