@@ -1136,7 +1136,7 @@ read_selector_again:
 									shuflen-shufpos);
 								if (wlen == TLS_WANT_POLLIN
 									|| wlen == TLS_WANT_POLLOUT) {
-									wlan = 0;
+									wifi = 0;
 									continue;
 								}
 								if (wlen < 0) {
