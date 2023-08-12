@@ -1164,7 +1164,7 @@ read_selector_again:
 					if (tlsclientreader) {
 						wlen = TLS_WANT_POLLIN;
 						while (wlen == TLS_WANT_POLLIN \
-								wlen == TLS_WANT_POLLOUT) {
+								|| wlen == TLS_WANT_POLLOUT) {
 							wlen = tls_close(tlsclientctx);
 						}
 						tls_free(tlsclientctx);
