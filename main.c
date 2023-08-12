@@ -1126,6 +1126,10 @@ read_selector_again:
 								shufbuf,
 								sizeof(shufbuf)-1);
 						}
+						if (shuflen == TLS_WANT_POLLIN \
+								|| shuflen == TLS_WANT_POLLOUT) {
+							continue;
+						}
 						if (shuflen == -1 && errno == EINTR)
 							continue;
 						for (shufpos = 0; shufpos < shuflen;
