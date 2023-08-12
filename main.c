@@ -1174,6 +1174,8 @@ read_selector_again:
 					}
 
 					lingersock(tlssocks[tlsclientreader? 0 : 1]);
+					shutdown(tlssocks[tlsclientreader? 0 : 1],
+							tlsclientreader? SHUT_WR : SHUT_RD);
 					close(tlssocks[tlsclientreader? 0 : 1]);
 
 					if (tlsclientreader) {
@@ -1192,6 +1194,7 @@ read_selector_again:
 					nocgi, istls);
 
 			lingersock(sock);
+			shutdown(sock, SHUT_RDWR);
 			close(sock);
 
 			if (loglvl & CONN) {

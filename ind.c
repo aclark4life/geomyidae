@@ -653,7 +653,6 @@ lingersock(int sock)
 	waitforpendingbytes(sock);
 	j = 0;
 	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &j, sizeof(int));
-	shutdown(sock, SHUT_RDWR);
 
 	return;
 }
