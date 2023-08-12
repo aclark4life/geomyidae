@@ -991,7 +991,12 @@ read_selector_again:
 				istls = 1;
 				if (tls_accept_socket(tlsctx, &tlsclientctx, sock) < 0)
 					return 1;
-				if (tls_handshake(tlsclientctx) < 0)
+				wlen = TLS_WANT_POLLIN;
+				while (wlen == TLS_WANT_POLLIN \
+						|| wlen == TLS_WANT_POLLOUT) {
+					wlen = tls_handshake(tlsclientctx);
+				}
+				if (wlen == -1)
 					return 1;
 			}
 #endif /* ENABLE_TLS */
