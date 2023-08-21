@@ -963,9 +963,10 @@ main(int argc, char *argv[])
 
 #ifdef __OpenBSD__
 			snprintf(promises, sizeof(promises),
-			         "rpath inet stdio %s %s",
-			         nocgi     ? ""    : "proc exec",
-			         revlookup ? "dns" : "");
+			         "rpath inet stdio %s %s %s",
+			         !nocgi || dotls ? "proc" : "",
+			         nocgi           ? ""     : "exec",
+			         revlookup       ? "dns"  : "");
 			if (pledge(promises, NULL) == -1) {
 				perror("pledge");
 				exit(1);
