@@ -329,6 +329,7 @@ dothegopher:
 		dprintf(sock, notfounderr, recvc);
 		if (loglvl & ERRORS)
 			logentry(clienth, clientp, recvc, "not found");
+		return;
 	}
 	if (stat(rpath, &dir) != -1) {
 		/*
@@ -426,6 +427,7 @@ dothegopher:
 		}
 	} else {
 		if (pathfallthrough && S_ISDIR(dir.st_mode)) {
+			dprintf(sock, notfounderr, recvc);
 			if (loglvl & ERRORS) {
 				logentry(clienth, clientp, recvc,
 					"directory listing in traversal not allowed");
