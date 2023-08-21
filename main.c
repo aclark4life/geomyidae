@@ -51,7 +51,7 @@ int glfd = -1;
 int dosyslog = 0;
 int logpriority = LOG_INFO|LOG_DAEMON;
 int loglvl = 47;
-int revlookup = 1;
+int revlookup = 0;
 char *logfile = NULL;
 
 int *listfds = NULL;
@@ -664,7 +664,7 @@ main(int argc, char *argv[])
 		logfile = EARGF(usage());
 		break;
 	case 'n':
-		revlookup = 0;
+		revlookup = 1;
 		break;
 	case 'o':
 		sport = EARGF(usage());
