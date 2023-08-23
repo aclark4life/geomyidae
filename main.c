@@ -331,6 +331,7 @@ dothegopher:
 			logentry(clienth, clientp, recvc, "not found");
 		return;
 	}
+
 	if (stat(rpath, &dir) != -1) {
 		/*
 		 * If sticky bit is set, only serve if this is encrypted.
@@ -359,7 +360,7 @@ dothegopher:
 				}
 				/*
 				 * The size check for strcat to work is
-				 * above.
+				 * calculated above this comment.
 				 *
 				 * Until strlcat isn't properly in all
 				 * linux libcs, we keep to this. OpenBSD
@@ -422,7 +423,7 @@ dothegopher:
 			if (loglvl & FILES)
 				logentry(clienth, clientp, recvc, "serving");
 
-			type->f(sock, rpath, port, base, args, sear, ohost,
+			type->f(sock, path, port, base, args, sear, ohost,
 				clienth, serverh, istls, recvc, traverse);
 		}
 	} else {
@@ -436,7 +437,7 @@ dothegopher:
 		}
 
 		if (!pathfallthrough && S_ISDIR(dir.st_mode)) {
-			handledir(sock, rpath, port, base, args, sear, ohost,
+			handledir(sock, path, port, base, args, sear, ohost,
 				clienth, serverh, istls, recvc, traverse);
 			if (loglvl & DIRS) {
 				logentry(clienth, clientp, recvc,
