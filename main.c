@@ -138,7 +138,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	      char *serverp, int nocgi, int istls)
 {
 	struct stat dir;
-	char recvc[1025], recvb[1025], path[PATH_MAX+1], rpath[PATH_MAX+1], args[1025],
+	char recvc[1025], recvb[1025], path[PATH_MAX+1], args[1025],
 		argsc[1025], traverse[1025], traversec[1025],
 		*sear, *sep, *recvbp, *c;
 	int len = 0, fd, i, maxrecv, pathfallthrough = 0;
@@ -190,15 +190,13 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 		if (strchr(recvb, '/'))
 			goto dothegopher;
 		if (snprintf(path, sizeof(path), "%s/%s", base, recvb) <= sizeof(path)) {
-			if (realpath(path, (char *)rpath)) {
-				if (stat(rpath, &dir) == 0) {
-					if (loglvl & FILES)
-						logentry(clienth, clientp, recvc, "compatibility serving");
+			if (stat(path, &dir) == 0) {
+				if (loglvl & FILES)
+					logentry(clienth, clientp, recvc, "compatibility serving");
 
-					handlecgi(sock, rpath, port, base, "", "", ohost,
-						clienth, serverh, istls, req, "");
-					return;
-				}
+				handlecgi(sock, path, port, base, "", "", ohost,
+					clienth, serverh, istls, req, "");
+				return;
 			}
 		}
 	}
@@ -325,14 +323,7 @@ dothegopher:
 		}
 	}
 
-	if (realpath(path, (char *)&rpath) == NULL) {
-		dprintf(sock, notfounderr, recvc);
-		if (loglvl & ERRORS)
-			logentry(clienth, clientp, recvc, "not found");
-		return;
-	}
-
-	if (stat(rpath, &dir) != -1) {
+	if (stat(path, &dir) != -1) {
 		/*
 		 * If sticky bit is set, only serve if this is encrypted.
 		 */
@@ -348,9 +339,9 @@ dothegopher:
 		if (S_ISDIR(dir.st_mode)) {
 			for (i = 0; i < sizeof(indexf)/sizeof(indexf[0]);
 					i++) {
-				len = strlen(rpath);
-				if (len + strlen(indexf[i]) + ((rpath[len-1] == '/')? 0 : 1)
-						>= sizeof(rpath)) {
+				len = strlen(path);
+				if (len + strlen(indexf[i]) + ((path[len-1] == '/')? 0 : 1)
+						>= sizeof(path)) {
 					if (loglvl & ERRORS) {
 						logentry(clienth, clientp,
 							recvc,
@@ -369,18 +360,18 @@ dothegopher:
 				 * strncat of one char static char array
 				 * is an overflow.
 				 */
-				if (rpath[len-1] != '/')
-					strcat(rpath, "/");
-				strcat(rpath, indexf[i]);
-				fd = open(rpath, O_RDONLY);
+				if (path[len-1] != '/')
+					strcat(path, "/");
+				strcat(path, indexf[i]);
+				fd = open(path, O_RDONLY);
 				if (fd >= 0)
 					break;
 
 				/* Not found. Clear path from indexf. */
-				rpath[len] = '\0';
+				path[len] = '\0';
 			}
 		} else {
-			fd = open(rpath, O_RDONLY);
+			fd = open(path, O_RDONLY);
 			if (fd < 0) {
 				dprintf(sock, notfounderr, recvc);
 				if (loglvl & ERRORS) {
@@ -396,9 +387,9 @@ dothegopher:
 	if (fd >= 0) {
 		close(fd);
 
-		c = strrchr(rpath, '/');
+		c = strrchr(path, '/');
 		if (c == NULL)
-			c = rpath;
+			c = path;
 		type = gettype(c);
 
 		/*
@@ -880,7 +871,7 @@ main(int argc, char *argv[])
 
 #ifdef __OpenBSD__
 	char promises[31]; /* check the size needed in the fork too */
-	snprintf(promises, sizeof(promises), "rpath inet stdio proc exec %s",
+	snprintf(promises, sizeof(promises), "inet stdio proc exec %s",
 	         revlookup ? "dns" : "");
 	if (pledge(promises, NULL) == -1) {
 		perror("pledge");
