@@ -871,7 +871,7 @@ main(int argc, char *argv[])
 
 #ifdef __OpenBSD__
 	char promises[31]; /* check the size needed in the fork too */
-	snprintf(promises, sizeof(promises), "inet stdio proc exec %s",
+	snprintf(promises, sizeof(promises), "rpath inet stdio proc exec %s",
 	         revlookup ? "dns" : "");
 	if (pledge(promises, NULL) == -1) {
 		perror("pledge");
