@@ -61,31 +61,37 @@ char *argv0;
 char stdbase[] = "/var/gopher";
 char *stdport = "70";
 char *indexf[] = {"index.gph", "index.cgi", "index.dcgi", "index.bob", "index.bin"};
+
 char *nocgierr = "3Sorry, execution of the token '%s' was requested, but this "
 	    "is disabled in the server configuration.\tErr"
 	    "\tlocalhost\t70\r\n";
+
 char *notfounderr = "3Sorry, but the requested token '%s' could not be found.\tErr"
 	    "\tlocalhost\t70\r\n";
+
 char *toolongerr = "3Sorry, but the requested token '%s' is a too long path.\tErr"
 	    "\tlocalhost\t70\r\n";
+
 char *tlserr = "3Sorry, but the requested token '%s' requires an encrypted connection.\tErr"
 	    "\tlocalhost\t70\r\n";
-char *htredir = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-		"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
-		"	\"DTD/xhtml-transitional.dtd\">\n"
-		"<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\">\n"
-		"  <head>\n"
-		"    <title>gopher redirect</title>\n"
-		"\n"
-		"    <meta http-equiv=\"Refresh\" content=\"1;url=%s\" />\n"
-		"  </head>\n"
-		"  <body>\n"
-		"    This page is for redirecting you to: <a href=\"%s\">%s</a>.\n"
-		"  </body>\n"
-		"</html>\n";
-char *selinval ="3Happy helping ☃ here: "
-		"Sorry, your selector does contains '..'. "
-		"That's illegal here.\tErr\tlocalhost\t70\r\n.\r\n\r\n";
+
+/* TODO: Transform gopherspace to not need this anymore. See sacc(1). */
+char *htredir = "<!DOCTYPE html>\n"
+		"<html><head><title>gopher redirect</title>\n"
+		"<meta http-equiv=\"refresh\" content=\"1;url=%s\" />\n"
+		"</head><body>\n"
+		"Please consider using native gopher 'w' type.\n"
+		"HTML is insecure and bloated.<br/>\n"
+		"You will be redirected to: <a href=\"%s\">%s</a>.\n"
+		"</body></html>\n";
+
+char *htescape = "3Happy helping ☃ here: "
+		 "Sorry, your URI was not properly escaped."
+		 "\tErr\tlocalhost\t70\r\n.\r\n\r\n";
+
+char *selinval = "3Happy helping ☃ here: "
+		 "Sorry, your selector does contains '..'. "
+		 "That's illegal here.\tErr\tlocalhost\t70\r\n.\r\n\r\n";
 
 int
 dropprivileges(struct group *gr, struct passwd *pw)
@@ -186,7 +192,7 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 	 * mode.
 	 */
 	if (!nocgi && recvb[0] != '/' && (c = strchr(recvb, ' '))) {
-		*c++ = '\0';
+		*c = '\0';
 		if (strchr(recvb, '/'))
 			goto dothegopher;
 		if (snprintf(path, sizeof(path), "%s/%s", base, recvb) <= sizeof(path)) {
@@ -199,8 +205,9 @@ handlerequest(int sock, char *req, int rlen, char *base, char *ohost,
 				return;
 			}
 		}
-	}
 dothegopher:
+		*c = ' ';
+	}
 
 	/* Do not allow requests including "..". */
 	if (strstr(recvb, "..")) {
@@ -237,7 +244,26 @@ dothegopher:
 	memmove(recvc, recvb, rlen+1);
 
 	/* Redirect to HTML redirecting to the specified URI. */
+	/* TODO: Fix gopherspace to not require this. */
 	if (!strncmp(recvb, "URL:", 4)) {
+		for (i = 4; i < sizeof(recvb)-1; i++) {
+			switch (recvb[i]) {
+			case '\0':
+				i = sizeof(recvb);
+				break;
+			case '"':
+			case '&':
+			case '>':
+			case '<':
+			case ' ':
+			case '\'':
+			case '\\':
+				write(sock, htescape, strlen(htescape));
+				if (loglvl & ERRORS)
+					logentry(clienth, clientp, recvc, "Unescaped HTTP redirect");
+				return;
+			}
+		}
 		len = snprintf(path, sizeof(path), htredir,
 				recvb + 4, recvb + 4, recvb + 4);
 		if (len > sizeof(path))
